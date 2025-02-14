@@ -1,14 +1,22 @@
 #include <Arduino.h>
 #include "components/DistanceSensor.h"
+#include "components/MotorController.h"
+#include "components/Motor.h"
 
 // put function declarations here:
 int myFunction(int, int);
 
+// Components initialization
 DistanceSensor distanceSensor(15, 18);
+MotorController motorController(14, 27, 21, 22, 12, 25);
+Motor motor1(motorController, 1);
+Motor motor2(motorController, 2);
 
 void setup() {
   // put your setup code here, to run once:
   distanceSensor.init();
+  motor1.init();
+  motor2.init();
 }
 
 void loop() {
