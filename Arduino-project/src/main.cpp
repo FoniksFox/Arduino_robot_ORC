@@ -1,11 +1,14 @@
 #include <Arduino.h>
+#include "components/DistanceSensor.h"
 
 // put function declarations here:
 int myFunction(int, int);
 
+DistanceSensor distanceSensor(15, 18);
+
 void setup() {
   // put your setup code here, to run once:
-  int result = myFunction(2, 3);
+  distanceSensor.init();
 }
 
 void loop() {
