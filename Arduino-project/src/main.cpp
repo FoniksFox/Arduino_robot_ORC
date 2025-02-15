@@ -3,6 +3,7 @@
 #include "components/MotorController.h"
 #include "components/Motor.h"
 #include "components/LineSensor.h"
+#include "components/VelocitySensor.h"
 
 // put function declarations here:
 int myFunction(int, int);
@@ -14,6 +15,8 @@ Motor motor1(motorController, 1);
 Motor motor2(motorController, 2);
 int sensors[8] = {10, 9, 8, 7, 6, 5, 4, 3};
 LineSensor lineSensor(11, sensors);
+VelocitySensor velocitySensor1(31);
+VelocitySensor velocitySensor2(30);
 
 void setup() {
   // put your setup code here, to run once:
@@ -21,6 +24,8 @@ void setup() {
   motor1.init();
   motor2.init();
   lineSensor.init();
+  velocitySensor1.init();
+  velocitySensor2.init();
 }
 
 void loop() {
