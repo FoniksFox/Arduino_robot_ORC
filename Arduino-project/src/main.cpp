@@ -9,14 +9,14 @@
 int myFunction(int, int);
 
 // Components initialization
-DistanceSensor distanceSensor(15, 18);
-MotorController motorController(14, 27, 21, 22, 12, 25);
+DistanceSensor distanceSensor(13, 11);
+MotorController motorController(14, 19, 23, 22, 12, 21);
 Motor motor1(motorController, 1);
 Motor motor2(motorController, 2);
-int sensors[8] = {10, 9, 8, 7, 6, 5, 4, 3};
-LineSensor lineSensor(11, sensors);
-VelocitySensor velocitySensor1(31);
-VelocitySensor velocitySensor2(30);
+int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
+LineSensor lineSensor(27, sensors);
+VelocitySensor velocitySensor1(16);
+VelocitySensor velocitySensor2(17);
 
 void setup() {
   // put your setup code here, to run once:
