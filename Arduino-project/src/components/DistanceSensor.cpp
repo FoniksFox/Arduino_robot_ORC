@@ -1,7 +1,9 @@
 #include "DistanceSensor.h"
 #include <Arduino.h>
 
-DistanceSensor::DistanceSensor(int trigPin, int echoPin) {
+DistanceSensor::DistanceSensor(int trigPin, int echoPin) : trigPin(trigPin), echoPin(echoPin) {}
+
+void DistanceSensor::init() {
     pinMode(trigPin, OUTPUT);
     pinMode(echoPin, INPUT);
 }

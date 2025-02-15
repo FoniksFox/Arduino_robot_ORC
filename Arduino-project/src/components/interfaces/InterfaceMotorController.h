@@ -1,5 +1,5 @@
-#ifndef IMOTORCONTROLLER.H
-#define IMOTORCONTROLLER.H
+#ifndef IMOTORCONTROLLER_H
+#define IMOTORCONTROLLER_H
 
 class IMotorController {
     public:
@@ -8,4 +8,4 @@ class IMotorController {
         virtual void stopMotor(int motor) = 0;
 };
 
-#endif // IMOTORCONTROLLER.H
+#endif // IMOTORCONTROLLER_H
