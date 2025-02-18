@@ -1,7 +1,7 @@
 #ifndef MotorController_H
 #define MotorController_H
 
-#include "interfaces/InterfaceMotorController.h"
+#include "../interfaces/InterfaceMotorController.h"
 
 class MotorController : public IMotorController {
     public:

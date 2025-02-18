@@ -1,7 +1,7 @@
 #ifndef VELOCITYSENSOR_H
 #define VELOCITYSENSOR_H
 
-#include "interfaces/InterfaceVelocitySensor.h"
+#include "../interfaces/InterfaceVelocitySensor.h"
 
 class VelocitySensor : public IVelocitySensor {
     public:

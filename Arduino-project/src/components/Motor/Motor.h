@@ -1,8 +1,8 @@
 #ifndef MOTOR_H
 #define MOTOR_H
 
-#include "interfaces/InterfaceMotor.h"
-#include "interfaces/InterfaceMotorController.h"
+#include "../interfaces/InterfaceMotor.h"
+#include "../interfaces/InterfaceMotorController.h"
 
 class Motor : public IMotor {
     public:

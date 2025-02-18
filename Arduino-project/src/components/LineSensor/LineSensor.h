@@ -1,7 +1,7 @@
 #ifndef LINESENSOR_H
 #define LINESENSOR_H
 
-#include "interfaces/InterfaceLineSensor.h"
+#include "../interfaces/InterfaceLineSensor.h"
 
 class LineSensor : public ILineSensor {
     public:

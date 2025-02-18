@@ -1,7 +1,7 @@
 #ifndef DISTANCESENSOR_H
 #define DISTANCESENSOR_H
 
-#include "interfaces/InterfaceDistanceSensor.h"
+#include "../interfaces/InterfaceDistanceSensor.h"
 
 class DistanceSensor : public IDistanceSensor {
     public:

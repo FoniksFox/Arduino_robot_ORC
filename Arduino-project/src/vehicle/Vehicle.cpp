@@ -1,4 +1,5 @@
 #include "Vehicle.h"
+#include <vector>
 
 int sensors[8] = {10, 9, 8, 7, 6, 5, 4, 3};
 
@@ -22,7 +23,28 @@ void Vehicle::init() {
 }
 
 void Vehicle::update() {
-    // Update logic here
+    double currentVelocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
+    double currentDistance = distanceSensor.getDistance();
+    double currentRotation = (velocitySensor1.getVelocity() - velocitySensor2.getVelocity()) / 2;
+    std::vector<double> currentState = {currentVelocity, currentRotation, currentDistance};
+    
+    std::vector<double> desiredState = {desiredVelocity, desiredRotation, desiredDistance};
+    std::vector<double> controlState = controlSystem.update(currentState, desiredState);
+
+   // Update motors with speed and direction
+    if (controlState[1] > 0) {
+        motor1.setSpeed(controlState[0] - controlState[1]);
+        motor2.setSpeed(controlState[0] + controlState[1]);
+    } else {
+        motor1.setSpeed(controlState[0] + controlState[1]);
+        motor2.setSpeed(-controlState[0] - controlState[1]);
+    }
+}
+
+void Vehicle::setDesiredState(double velocity, double rotation, double distance) {
+    desiredVelocity = velocity;
+    desiredRotation = rotation;
+    desiredDistance = distance;
 }
 
 ControlSystem Vehicle::getControlSystem() {
