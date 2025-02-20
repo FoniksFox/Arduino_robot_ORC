@@ -9,6 +9,12 @@ void DistanceSensor::init() {
 }
 
 long DistanceSensor::getDistance() {
+    if (lastTime == 0) {
+        lastTime = millis();
+    }
+    if (millis() - lastTime < 100) {
+        return lastDistance;
+    }
     digitalWrite(trigPin, LOW);
     delayMicroseconds(2);
     digitalWrite(trigPin, HIGH);
@@ -18,5 +24,6 @@ long DistanceSensor::getDistance() {
     long duration = pulseIn(echoPin, HIGH);
     long distance = duration * 0.034 / 2;
     
+    lastTime = millis();
     return distance;
 }

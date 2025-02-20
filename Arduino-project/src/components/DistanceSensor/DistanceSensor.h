@@ -12,6 +12,8 @@ class DistanceSensor : public IDistanceSensor {
     private:
         int trigPin;
         int echoPin;
+        double lastTime = 0;
+        long lastDistance = 0;
 };
 
 #endif // DISTANCESENSOR_H
