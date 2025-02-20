@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "components/DistanceSensor.h"
+#include "components/DistanceSensor/DistanceSensor.h"
 #include "components/MotorController.h"
 #include "components/Motor.h"
 #include "components/LineSensor.h"
@@ -9,7 +9,7 @@
 int myFunction(int, int);
 
 // Components initialization
-DistanceSensor distanceSensor(13, 11);
+DistanceSensor distanceSensor(13, 18);
 MotorController motorController(14, 19, 23, 22, 12, 21);
 Motor motor1(motorController, 1);
 Motor motor2(motorController, 2);
