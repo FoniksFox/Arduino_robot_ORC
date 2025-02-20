@@ -9,6 +9,7 @@ class Motor : public IMotor {
         Motor(IMotorController& motorController, int motor);
         void init() override;
         void setSpeed(int speed) override;
+        int getSpeed() override;
         void stop() override;
 
     private:

@@ -14,14 +14,26 @@ void MotorController::init() {
 }
 
 void MotorController::setMotorSpeed(int motor, int speed) {
+    speed = speed > 255 ? 255 : speed;
+    speed = speed < -255 ? -255 : speed;
     if (motor == 1) {
-        analogWrite(enA, speed);
+        speed1 = speed;
+        analogWrite(enA, speed > 0 ? speed : -speed);
         digitalWrite(in1, speed > 0 ? HIGH : LOW);
         digitalWrite(in2, speed > 0 ? LOW : HIGH);
     } else if (motor == 2) {
-        analogWrite(enB, speed);
+        speed2 = speed;
+        analogWrite(enB, speed > 0 ? speed : -speed);
         digitalWrite(in3, speed > 0 ? HIGH : LOW);
         digitalWrite(in4, speed > 0 ? LOW : HIGH);
+    }
+}
+
+int MotorController::getMotorSpeed(int motor) {
+    if (motor == 1) {
+        return speed1;
+    } else if (motor == 2) {
+        return speed2;
     }
 }
 
