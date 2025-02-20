@@ -7,24 +7,37 @@
 class ControlSystem : public IControlSystem {
     public:
         void init() override;
-        std::vector<double> update(std::vector<double> currentState, std::vector<double> desiredState) override;
+        std::vector<int> update(double velocity1, double velocity2, int theoreticalVelocity1, int theoreticalVelocity2, double position, double distance) override;
 
     private:
-        std::vector<double> kp = {1.0, 1.0, 0.0};
-        std::vector<double> ki = {0.1, 0.1, 0.0};
-        std::vector<double> kd = {0.01, 0.02, 0.0};
+        static double positionError;
+        static double positionProportionalError;
+        static double positionIntegral;
+        static double positionDerivative;
+        static double positionKp;
+        static double positionKi;
+        static double positionKd;
 
-        std::vector<double> error = {0, 0, 0};
-        std::vector<double> lastError = {0, 0, 0};
-        std::vector<double> integral = {0, 0, 0};
-        std::vector<double> derivative = {0, 0, 0};
+        static double distanceKp;
+        static double distanceKd;
+        static double lastDistance;
 
-        // Cross-coupling gains
-        std::vector<std::vector<double>> crossKp = {{0.0, -0.3, 0.1}, {0.1, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-        std::vector<std::vector<double>> crossKi = {{0.0, -0.01, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-        std::vector<std::vector<double>> crossKd = {{0.0, -0.005, 0.003}, {0.002, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-        double const INTEGRAL_LIMIT = 10.0;
-        double const FEEDFORWARD_GAIN = 0.1;
+        static double velocityError1;
+        static double velocityProportionalError1;
+        static double velocityIntegral1;
+        static double velocityDerivative1;
+        static double velocityKp1;
+        static double velocityKi1;
+        static double velocityKd1;
+        static double velocityError2;
+        static double velocityProportionalError2;
+        static double velocityIntegral2;
+        static double velocityDerivative2;
+        static double velocityKp2;
+        static double velocityKi2;
+        static double velocityKd2;
+
+        static double INTEGRAL_LIMIT;
         double lastTime = 0;
 };
 

@@ -5,60 +5,82 @@
 
 /* Control System diagram (may need improvements, like kalman filter and maybe a manual bypass):
 +-----------------+          ___________           +-----------------+       +-----------------+
-|   Desired       |         /           \          |   Controller    |       |   Actuators     |
-|    State        |      - /             \         |                 |       |                 |
+|  Theoretical    |         /           \          |   Controller    |       |   Actuators     |
+|    State        |      + /             \         |                 |       |                 |
 |   (Vector)      +------>|               |------->+                 +------>+                 |
-|   [v, r, d]     |        \             /         |   PID Control   |       |  Motors, etc.   |
-|                 |         \___________/          |   (Vector)      |       |                 |
-+-----------------+               ^ +              +--------+--------+       +-----------------+
-                                  |                         |
-                                  |                         |
-                                  |                         v
-                         +--------+--------+       +--------+--------+
-                         |   Sensors       |       |   Vehicle       |
-                         |   (Vector)      |       |  Dynamics       |
-                         |   [v, r, d]     +<------+                 |
-                         |                 |       |                 |
-                         +-----------------+       +-----------------+
+|    [v1, v2]     |        \             /         |   PID Control   |       |     Motors      |
+|                 |         \___________/          |   (Vector)      |       |    [v1, v2]     |
++-----------------+               ^ -              +-----------------+       +--------+--------+
+                                  |                                                   |
+                                  |                                                   |
+                                  |                                                   v
+                         +--------+--------+                                 +--------+--------+
+                         |   Sensors       |                                 |   Vehicle       |
+                         |   (Vector)      |                                 |  Dynamics       |
+                         | [v1, v2, p, d]  +<--------------------------------+                 |
+                         |                 |                                 |                 |
+                         +-----------------+                                 +-----------------+
 */
 
 void ControlSystem::init() {
     // does nothing
 }
 
-std::vector<double> ControlSystem::update(std::vector<double> currentState, std::vector<double> desiredState) {
-    std::vector<double> controlSignal = {0, 0, 0};
-    // Calculate errors
-    for (size_t i = 0; i < error.size(); ++i) {
-        error[i] = desiredState[i] - currentState[i];
+std::vector<int> ControlSystem::update(double velocity1, double velocity2, int theoreticalVelocity1, int theoreticalVelocity2, double position, double distance) {
+    std::vector<int> controlSignal = {0, 0};
 
-        integral[i] += error[i] * (millis() - lastTime);
-        // Prevent integral windup
-        if (integral[i] > INTEGRAL_LIMIT) integral[i] = INTEGRAL_LIMIT;
-        if (integral[i] < -INTEGRAL_LIMIT) integral[i] = -INTEGRAL_LIMIT;
-
-        derivative[i] = error[i] - lastError[i] / (millis() - lastTime);
-
-        controlSignal[i] = kp[i] * error[i] + ki[i] * integral[i] + kd[i] * derivative[i];
-    }
-
-    // Apply cross-coupling terms
-    for (size_t i = 0; i < controlSignal.size(); ++i) {
-        for (size_t j = 0; j < controlSignal.size(); ++j) {
-            if (i != j) {
-                controlSignal[i] += crossKp[i][j] * error[j] + crossKi[i][j] * integral[j] + crossKd[i][j] * derivative[j];
-            }
+    // Calculate position errors
+    if (position == -10) { // No line detected
+        if (positionError < 0) {
+            // Turn left
+            return {230, -230};
+        } else {
+            // Turn right
+            return {-230, 230};
         }
-    }
+    } else if (position == 10) { // Intersection detected
+        
+    } else { // Normal operation
+        double error = position;
+        positionProportionalError = positionKp * (error);
+        positionIntegral += error * (millis() - lastTime);
+        // Prevent integral windup
+        if (positionIntegral > INTEGRAL_LIMIT) positionIntegral = INTEGRAL_LIMIT;
+        if (positionIntegral < -INTEGRAL_LIMIT) positionIntegral = -INTEGRAL_LIMIT;
 
-    // Feedforward control
-    std::vector<double> feedforward = {desiredState[0] * FEEDFORWARD_GAIN, desiredState[1] * FEEDFORWARD_GAIN, desiredState[2] * FEEDFORWARD_GAIN};
-    for (size_t i = 0; i < controlSignal.size(); ++i) {
-        controlSignal[i] += feedforward[i];  // Adjust for faster response
+        positionDerivative = positionKd * (error - positionError) / (millis() - lastTime);
+
+        positionError = error;
     }
+    double positionControl = positionProportionalError + positionIntegral + positionDerivative;
+
+    // Take distante into account
+    double distanceControl = 0;
+    distanceControl += distanceKp * (1 / (distance+1));
+    distanceControl += distanceKd * (distance - lastDistance) / (millis() - lastTime);
+    lastDistance = distance;
+
+    // Calculate velocity errors (TODO: use correctly the integral part)
+    double velocityControl1 = 0;
+    velocityControl1 = velocityKp1 * (theoreticalVelocity1 - velocity1);
+    velocityControl1 += velocityKi1 * (theoreticalVelocity1 - velocity1) * (millis() - lastTime);
+    velocityControl1 += velocityKd1 * (theoreticalVelocity1 - velocity1 - velocityError1) / (millis() - lastTime);
+    velocityError1 = theoreticalVelocity1 - velocity1;
+    if (velocityControl1 > 255) velocityControl1 = 255;
+    if (velocityControl1 < -255) velocityControl1 = -255;
+
+    double velocityControl2 = 0;
+    velocityControl2 = velocityKp2 * (theoreticalVelocity2 - velocity2);
+    velocityControl2 += velocityKi2 * (theoreticalVelocity2 - velocity2) * (millis() - lastTime);
+    velocityControl2 += velocityKd2 * (theoreticalVelocity2 - velocity2 - velocityError2) / (millis() - lastTime);
+    velocityError2 = theoreticalVelocity2 - velocity2;
+    if (velocityControl2 > 255) velocityControl2 = 255;
+    if (velocityControl2 < -255) velocityControl2 = -255;
+
+    // Calculate control signal
+    controlSignal[0] = velocityControl1 + positionControl + distanceControl;
+    controlSignal[1] = velocityControl2 - positionControl + distanceControl;
 
     lastTime = millis();
-    lastError = error;
-
     return controlSignal;
 }
