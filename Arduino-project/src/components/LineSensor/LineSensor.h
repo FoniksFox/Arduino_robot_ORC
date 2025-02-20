@@ -7,7 +7,7 @@ class LineSensor : public ILineSensor {
     public:
         LineSensor(int IR, int sensors[8]);
         void init() override;
-        int getLinePosition() override;
+        double getLinePosition() override;
 
     private:
         int IR;
