@@ -4,7 +4,6 @@
 int sensors[8] = {10, 9, 8, 7, 6, 5, 4, 3};
 
 Vehicle::Vehicle() : 
-    controlSystem(),
     distanceSensor(15, 18), 
     motorController(14, 27, 21, 22, 12, 25), 
     motor1(motorController, 1), 
@@ -15,6 +14,7 @@ Vehicle::Vehicle() :
 
 void Vehicle::init() {
     distanceSensor.init();
+    motorController.init();
     motor1.init();
     motor2.init();
     lineSensor.init();
@@ -23,32 +23,16 @@ void Vehicle::init() {
 }
 
 void Vehicle::update() {
-    double currentVelocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
-    double currentDistance = distanceSensor.getDistance();
-    double currentRotation = (velocitySensor1.getVelocity() - velocitySensor2.getVelocity()) / 2;
-    std::vector<double> currentState = {currentVelocity, currentRotation, currentDistance};
-    
-    std::vector<double> desiredState = {desiredVelocity, desiredRotation, desiredDistance};
-    std::vector<double> controlState = controlSystem.update(currentState, desiredState);
+    std::vector<int> controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance());
 
-   // Update motors with speed and direction
-    if (controlState[1] > 0) {
-        motor1.setSpeed(controlState[0] - controlState[1]);
-        motor2.setSpeed(controlState[0] + controlState[1]);
-    } else {
-        motor1.setSpeed(controlState[0] + controlState[1]);
-        motor2.setSpeed(-controlState[0] - controlState[1]);
-    }
+    motor1.setSpeed(controlState[0]);
+    motor2.setSpeed(controlState[1]);
 }
 
 void Vehicle::setDesiredState(double velocity, double rotation, double distance) {
     desiredVelocity = velocity;
     desiredRotation = rotation;
     desiredDistance = distance;
-}
-
-ControlSystem Vehicle::getControlSystem() {
-    return controlSystem;
 }
 
 DistanceSensor Vehicle::getDistanceSensor() {

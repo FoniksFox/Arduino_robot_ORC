@@ -23,32 +23,54 @@
 */
 
 void ControlSystem::init() {
-    // does nothing
+    positionError = 0;
+    positionProportionalError = 0;
+    positionIntegral = 0;
+    positionDerivative = 0;
+    positionKp = 0.6;
+    positionKi = 0.05;
+    positionKd = 0.2;
+
+    distanceKp = 0.4;
+    distanceKd = 0.1;
+    lastDistance = 0;
+
+    Kvelocity = 0.4;
+    Kposition = 0.7;
+    Kdistance = 0.3;
+
+    INTEGRAL_LIMIT = 1000;
+    lastTime = millis();
 }
 
-std::vector<int> ControlSystem::update(double velocity1, double velocity2, int theoreticalVelocity1, int theoreticalVelocity2, double position, double distance) {
+std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance) {
     std::vector<int> controlSignal = {0, 0};
+    if (lastTime == 0) lastTime = millis();
+    if (lastDistance == 0) lastDistance = distance;
+    double deltaT = millis() - lastTime + 1e-6;
 
     // Calculate position errors
     if (position == -10) { // No line detected
         if (positionError < 0) {
             // Turn left
+            positionError = 0;
             return {230, -230};
         } else {
             // Turn right
+            positionError = 0;
             return {-230, 230};
         }
     } else if (position == 10) { // Intersection detected
-        
+        positionError = 0;
     } else { // Normal operation
         double error = position;
         positionProportionalError = positionKp * (error);
-        positionIntegral += error * (millis() - lastTime);
+        positionIntegral += positionKi * error * deltaT / 1000;
         // Prevent integral windup
         if (positionIntegral > INTEGRAL_LIMIT) positionIntegral = INTEGRAL_LIMIT;
         if (positionIntegral < -INTEGRAL_LIMIT) positionIntegral = -INTEGRAL_LIMIT;
 
-        positionDerivative = positionKd * (error - positionError) / (millis() - lastTime);
+        positionDerivative = positionKd * (error - positionError) / deltaT;
 
         positionError = error;
     }
@@ -56,30 +78,21 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, int t
 
     // Take distante into account
     double distanceControl = 0;
-    distanceControl += distanceKp * (1 / (distance+1));
-    distanceControl += distanceKd * (distance - lastDistance) / (millis() - lastTime);
+    distanceControl += distanceKp * distance;
+    distanceControl += distanceKd * (distance - lastDistance) / deltaT;
+    if (distanceControl < 0) distanceControl = 0;
     lastDistance = distance;
 
-    // Calculate velocity errors (TODO: use correctly the integral part)
-    double velocityControl1 = 0;
-    velocityControl1 = velocityKp1 * (theoreticalVelocity1 - velocity1);
-    velocityControl1 += velocityKi1 * (theoreticalVelocity1 - velocity1) * (millis() - lastTime);
-    velocityControl1 += velocityKd1 * (theoreticalVelocity1 - velocity1 - velocityError1) / (millis() - lastTime);
-    velocityError1 = theoreticalVelocity1 - velocity1;
-    if (velocityControl1 > 255) velocityControl1 = 255;
-    if (velocityControl1 < -255) velocityControl1 = -255;
-
-    double velocityControl2 = 0;
-    velocityControl2 = velocityKp2 * (theoreticalVelocity2 - velocity2);
-    velocityControl2 += velocityKi2 * (theoreticalVelocity2 - velocity2) * (millis() - lastTime);
-    velocityControl2 += velocityKd2 * (theoreticalVelocity2 - velocity2 - velocityError2) / (millis() - lastTime);
-    velocityError2 = theoreticalVelocity2 - velocity2;
-    if (velocityControl2 > 255) velocityControl2 = 255;
-    if (velocityControl2 < -255) velocityControl2 = -255;
-
     // Calculate control signal
-    controlSignal[0] = velocityControl1 + positionControl + distanceControl;
-    controlSignal[1] = velocityControl2 - positionControl + distanceControl;
+    controlSignal[0] = int(velocity1*Kvelocity + positionControl*Kposition - distanceControl*Kdistance);
+    controlSignal[1] = int(velocity2*Kvelocity - positionControl*Kposition - distanceControl*Kdistance);
+
+    // Normalize control signal, proportionally, to [-255, 255]
+    double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
+    if (maxControlSignal > 0) {
+        controlSignal[0] = controlSignal[0] * 255 / maxControlSignal;
+        controlSignal[1] = controlSignal[1] * 255 / maxControlSignal;
+    }
 
     lastTime = millis();
     return controlSignal;

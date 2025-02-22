@@ -16,7 +16,6 @@ class Vehicle : public IVehicle {
         void update() override;
         void setDesiredState(double velocity, double rotation, double distance) override;
         
-        ControlSystem getControlSystem();
         DistanceSensor getDistanceSensor();
         MotorController getMotorController();
         Motor getMotor1();
@@ -26,7 +25,6 @@ class Vehicle : public IVehicle {
         VelocitySensor getVelocitySensor2();
 
     private:
-        ControlSystem controlSystem;
         DistanceSensor distanceSensor;
         MotorController motorController;
         Motor motor1;
