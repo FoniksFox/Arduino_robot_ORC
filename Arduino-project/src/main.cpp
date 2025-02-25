@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include "components/DistanceSensor/DistanceSensor.h"
-#include "components/MotorController.h"
-#include "components/Motor.h"
-#include "components/LineSensor.h"
-#include "components/VelocitySensor.h"
+#include "components/MotorController/MotorController.h"
+#include "components/Motor/Motor.h"
+#include "components/LineSensor/LineSensor.h"
+#include "components/VelocitySensor/VelocitySensor.h"
 
 // put function declarations here:
 int myFunction(int, int);
@@ -18,7 +18,8 @@ LineSensor lineSensor(27, sensors);
 VelocitySensor velocitySensor1(16);
 VelocitySensor velocitySensor2(17);
 
-void setup() {
+void setup()
+{
   // put your setup code here, to run once:
   distanceSensor.init();
   motor1.init();
@@ -28,11 +29,13 @@ void setup() {
   velocitySensor2.init();
 }
 
-void loop() {
+void loop()
+{
   // put your main code here, to run repeatedly:
 }
 
 // put function definitions here:
-int myFunction(int x, int y) {
+int myFunction(int x, int y)
+{
   return x + y;
 }
