@@ -1,16 +1,16 @@
 #include "Vehicle.h"
 #include <vector>
 
-int sensors[8] = {10, 9, 8, 7, 6, 5, 4, 3};
+int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
 
 Vehicle::Vehicle() : 
-    distanceSensor(15, 18), 
-    motorController(14, 27, 21, 22, 12, 25), 
+    distanceSensor(13, 18), 
+    motorController(14, 19, 23, 22, 12, 21), 
     motor1(motorController, 1), 
     motor2(motorController, 2), 
     lineSensor(11, sensors), 
-    velocitySensor1(31), 
-    velocitySensor2(30) {}
+    velocitySensor1(16), 
+    velocitySensor2(17) {}
 
 void Vehicle::init() {
     distanceSensor.init();
@@ -27,12 +27,6 @@ void Vehicle::update() {
 
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
-}
-
-void Vehicle::setDesiredState(double velocity, double rotation, double distance) {
-    desiredVelocity = velocity;
-    desiredRotation = rotation;
-    desiredDistance = distance;
 }
 
 DistanceSensor Vehicle::getDistanceSensor() {

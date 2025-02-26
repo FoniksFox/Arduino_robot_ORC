@@ -13,9 +13,7 @@ class IVehicle
 public:
     virtual void init() = 0;
     virtual void update() = 0;
-    virtual void setDesiredState(double velocity, double rotation, double distance) = 0;
 
-    virtual ControlSystem getControlSystem() = 0;
     virtual DistanceSensor getDistanceSensor() = 0;
     virtual MotorController getMotorController() = 0;
     virtual Motor getMotor1() = 0;
