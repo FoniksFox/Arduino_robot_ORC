@@ -16,6 +16,7 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
+  vehicle.update();
 }
 
 // put function definitions here:
