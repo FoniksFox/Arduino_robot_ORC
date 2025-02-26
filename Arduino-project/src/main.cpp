@@ -22,6 +22,7 @@
 #define LINE_ENABLE_PIN 27
 #define VELOCITY1_PIN 16
 #define VELOCITY2_PIN 17
+
 // Global variables
 int speed = 50;
 int turning = 50;
@@ -84,7 +85,7 @@ class CharacteristicCallbacks: public NimBLECharacteristicCallbacks {
                 const char* direction = doc["direction"];
                 Serial.print("Movement direction: ");
                 Serial.println(direction);
-                handleMovement(direction);
+                // Do command (add code)
             }
             else if (strcmp(command, "set_param") == 0) {
                 const char* param = doc["param"];
@@ -93,20 +94,13 @@ class CharacteristicCallbacks: public NimBLECharacteristicCallbacks {
                 Serial.print(param);
                 Serial.print(" = ");
                 Serial.println(value);
-                handleParameter(param, value);
+                // Gets new values (add code)
             }
         }
     }
 
-    // Keep your existing handleMovement and handleParameter functions
-    void handleMovement(const char* direction) {
-        // Your existing code...
-    }
-
-    void handleParameter(const char* param, int value) {
-        // Your existing code...
-    }
 };
+
 void setup() {
     Serial.begin(9600);
 
@@ -118,8 +112,6 @@ void setup() {
     lineSensor.init();
     velocitySensor1.init();
     velocitySensor2.init();
-
-    motor1.setSpeed(100);
 
     // Initialize NimBLE
     NimBLEDevice::init("ESP32-Robot");
@@ -144,17 +136,16 @@ void setup() {
     // Start the service
     pService->start();
 
-    // Configure advertising (No redeclaration error now)
+    // Configure advertising
     NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
     pAdvertising->setName("ESP32-Robot");
-    pAdvertising->setMinInterval(0x20);  // 0x20 * 0.625ms = 20ms
-    pAdvertising->setMaxInterval(0x40);  // 0x40 * 0.625ms = 40ms
+    pAdvertising->setMinInterval(0x20);
+    pAdvertising->setMaxInterval(0x40); 
     
     // Start advertising
     pAdvertising->start();
-    
     Serial.println("BLE server ready");
 }
 
@@ -169,12 +160,12 @@ void loop() {
         String jsonString;
         serializeJson(doc, jsonString);
         pCharacteristic->setValue(jsonString.c_str());
-        pCharacteristic->indicate(); // Changed from notify() to indicate()
+        pCharacteristic->indicate(); 
         
         delay(100);
     }
 
         
-        delay(500); // Update rate: 10Hz
+        delay(500); // Global delay
     }
 
