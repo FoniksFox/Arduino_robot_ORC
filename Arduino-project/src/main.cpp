@@ -11,17 +11,7 @@
 
 #define SERVICE_UUID "d7aa9e26-3527-416a-aaee-c7b1454642dd"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
-#define DISTANCE_TRIG_PIN 13
-#define DISTANCE_ECHO_PIN 18
-#define MOTOR_EN1_PIN 14
-#define MOTOR_EN2_PIN 19
-#define MOTOR_IN1_PIN 23
-#define MOTOR_IN2_PIN 22
-#define MOTOR_IN3_PIN 12
-#define MOTOR_IN4_PIN 21
-#define LINE_ENABLE_PIN 27
-#define VELOCITY1_PIN 16
-#define VELOCITY2_PIN 17
+
 // Global variables
 int speed = 50;
 int turning = 50;
@@ -32,14 +22,6 @@ NimBLECharacteristic* pCharacteristic = nullptr;
 bool deviceConnected = false;
 
 // Components initialization
-DistanceSensor distanceSensor(13, 18);
-MotorController motorController(14, 19, 23, 22, 12, 21);
-Motor motor1(motorController, 1);
-Motor motor2(motorController, 2);
-int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
-LineSensor lineSensor(27, sensors);
-VelocitySensor velocitySensor1(16);
-VelocitySensor velocitySensor2(17);
 
 class ServerCallbacks: public NimBLEServerCallbacks {
     void onConnect(NimBLEServer* pServer) {
@@ -111,15 +93,6 @@ void setup() {
     Serial.begin(9600);
 
     // Initialize components
-    distanceSensor.init();
-    motorController.init();
-    motor1.init();
-    motor2.init();
-    lineSensor.init();
-    velocitySensor1.init();
-    velocitySensor2.init();
-
-    motor1.setSpeed(100);
 
     // Initialize NimBLE
     NimBLEDevice::init("ESP32-Robot");
