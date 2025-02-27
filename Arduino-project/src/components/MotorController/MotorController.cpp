@@ -20,17 +20,21 @@ void MotorController::setMotorSpeed(int motor, int speed) {
         digitalWrite(in1, speed > 0 ? HIGH : LOW);
         digitalWrite(in2, speed > 0 ? LOW : HIGH);
         if (speed1 - speed > 50) {
+            Serial.println("Over speed by " + String(speed1 - speed));
             analogWrite(enA, 50);
             delay(100);
             if (speed1 - speed > 100) {
+                Serial.println("Over speed again by " + String(speed1 - speed));
                 analogWrite(enA, 100);
                 delay(100);
             }
         }
         if (speed1 - speed < -50) {
+            Serial.println("Over speed by " + String(speed1 - speed));
             analogWrite(enA, 50);
             delay(100);
             if (speed1 - speed < -100) {
+                Serial.println("Over speed again by " + String(speed1 - speed));
                 analogWrite(enA, 100);
                 delay(100);
             }
@@ -41,17 +45,21 @@ void MotorController::setMotorSpeed(int motor, int speed) {
         digitalWrite(in3, speed > 0 ? HIGH : LOW);
         digitalWrite(in4, speed > 0 ? LOW : HIGH);
         if (speed2 - speed > 50) {
+            Serial.println("Over speed by " + String(speed1 - speed));
             analogWrite(enB, 50);
             delay(100);
             if (speed2 - speed > 100) {
+                Serial.println("Over speed again by " + String(speed1 - speed));
                 analogWrite(enA, 100);
                 delay(100);
             }
         }
         if (speed2 - speed < -50) {
+            Serial.println("Over speed by " + String(speed1 - speed));
             analogWrite(enA, 50);
             delay(100);
             if (speed2 - speed < -100) {
+                Serial.println("Over speed again by " + String(speed1 - speed));
                 analogWrite(enA, 100);
                 delay(100);
             }
