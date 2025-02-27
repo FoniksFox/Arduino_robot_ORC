@@ -47,11 +47,9 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     if (position == -10) { // No line detected
         if (positionError < 0) {
             // Turn left
-            positionError = 0;
             return {230, -230};
         } else {
             // Turn right
-            positionError = 0;
             return {-230, 230};
         }
     } else if (position == 10) { // Intersection detected
