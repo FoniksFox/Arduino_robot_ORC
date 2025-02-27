@@ -11,6 +11,20 @@
 
 #define SERVICE_UUID "d7aa9e26-3527-416a-aaee-c7b1454642dd"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
+<<<<<<< HEAD
+=======
+#define DISTANCE_TRIG_PIN 13
+#define DISTANCE_ECHO_PIN 18
+#define MOTOR_EN1_PIN 14
+#define MOTOR_EN2_PIN 19
+#define MOTOR_IN1_PIN 23
+#define MOTOR_IN2_PIN 22
+#define MOTOR_IN3_PIN 12
+#define MOTOR_IN4_PIN 21
+#define LINE_ENABLE_PIN 27
+#define VELOCITY1_PIN 16
+#define VELOCITY2_PIN 17
+>>>>>>> 2e2e39faf0f0bd8534504e3b32a2afe4a4079fbd
 
 // Global variables
 int speed = 50;
@@ -66,7 +80,7 @@ class CharacteristicCallbacks: public NimBLECharacteristicCallbacks {
                 const char* direction = doc["direction"];
                 Serial.print("Movement direction: ");
                 Serial.println(direction);
-                handleMovement(direction);
+                // Do command (add code)
             }
             else if (strcmp(command, "set_param") == 0) {
                 const char* param = doc["param"];
@@ -75,24 +89,27 @@ class CharacteristicCallbacks: public NimBLECharacteristicCallbacks {
                 Serial.print(param);
                 Serial.print(" = ");
                 Serial.println(value);
-                handleParameter(param, value);
+                // Gets new values (add code)
             }
         }
     }
 
-    // Keep your existing handleMovement and handleParameter functions
-    void handleMovement(const char* direction) {
-        // Your existing code...
-    }
-
-    void handleParameter(const char* param, int value) {
-        // Your existing code...
-    }
 };
+
 void setup() {
     Serial.begin(9600);
 
     // Initialize components
+<<<<<<< HEAD
+=======
+    distanceSensor.init();
+    motorController.init();
+    motor1.init();
+    motor2.init();
+    lineSensor.init();
+    velocitySensor1.init();
+    velocitySensor2.init();
+>>>>>>> 2e2e39faf0f0bd8534504e3b32a2afe4a4079fbd
 
     // Initialize NimBLE
     NimBLEDevice::init("ESP32-Robot");
@@ -117,17 +134,16 @@ void setup() {
     // Start the service
     pService->start();
 
-    // Configure advertising (No redeclaration error now)
+    // Configure advertising
     NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
     pAdvertising->setName("ESP32-Robot");
-    pAdvertising->setMinInterval(0x20);  // 0x20 * 0.625ms = 20ms
-    pAdvertising->setMaxInterval(0x40);  // 0x40 * 0.625ms = 40ms
+    pAdvertising->setMinInterval(0x20);
+    pAdvertising->setMaxInterval(0x40); 
     
     // Start advertising
     pAdvertising->start();
-    
     Serial.println("BLE server ready");
 }
 
@@ -142,12 +158,12 @@ void loop() {
         String jsonString;
         serializeJson(doc, jsonString);
         pCharacteristic->setValue(jsonString.c_str());
-        pCharacteristic->indicate(); // Changed from notify() to indicate()
+        pCharacteristic->indicate(); 
         
         delay(100);
     }
 
         
-        delay(500); // Update rate: 10Hz
+        delay(500); // Global delay
     }
 
