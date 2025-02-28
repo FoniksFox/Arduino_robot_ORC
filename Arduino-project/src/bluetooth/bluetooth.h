@@ -4,16 +4,22 @@
 #include <NimBLEUtils.h>
 #include <ArduinoJson.h>
 
-class bluetooth {
+class Bluetooth : public NimBLEServerCallbacks, public NimBLECharacteristicCallbacks {
     public:
-        void static init();
-        void static setup();
-        void static update();
+        Bluetooth();
+        void setup();
+        void update(StaticJsonDocument<200> doc);
+
+        void onConnect(NimBLEServer* pServer) override;
+        void onDisconnect(NimBLEServer* pServer) override;
+        void onWrite(NimBLECharacteristic* pCharacteristic) override;
 
     private:
-        static std::string SERVICE_UUID;
-        static std::string CHARACTERISTIC_UUID;
-        static NimBLEServer* pServer;
-        static NimBLECharacteristic* pCharacteristic;
-        static bool deviceConnected;
+        std::string SERVICE_UUID;
+        std::string CHARACTERISTIC_UUID;
+        NimBLEServer* pServer;
+        NimBLECharacteristic* pCharacteristic;
+        bool deviceConnected;
+        unsigned long lastUpdateTime;
+
 };
