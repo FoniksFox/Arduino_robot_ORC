@@ -19,44 +19,12 @@ void MotorController::setMotorSpeed(int motor, int speed) {
     if (motor == 1) {
         digitalWrite(in1, speed > 0 ? HIGH : LOW);
         digitalWrite(in2, speed > 0 ? LOW : HIGH);
-        if (speed1 - speed > 50) {
-            analogWrite(enA, 50);
-            delay(100);
-            if (speed1 - speed > 100) {
-                analogWrite(enA, 100);
-                delay(100);
-            }
-        }
-        if (speed1 - speed < -50) {
-            analogWrite(enA, 50);
-            delay(100);
-            if (speed1 - speed < -100) {
-                analogWrite(enA, 100);
-                delay(100);
-            }
-        }
         analogWrite(enA, speed > 0 ? speed : -speed);
         speed1 = speed;
     } else if (motor == 2) {
         digitalWrite(in3, speed > 0 ? HIGH : LOW);
         digitalWrite(in4, speed > 0 ? LOW : HIGH);
-        if (speed2 - speed > 50) {
-            analogWrite(enB, 50);
-            delay(100);
-            if (speed2 - speed > 100) {
-                analogWrite(enA, 100);
-                delay(100);
-            }
-        }
-        if (speed2 - speed < -50) {
-            analogWrite(enA, 50);
-            delay(100);
-            if (speed2 - speed < -100) {
-                analogWrite(enA, 100);
-                delay(100);
-            }
-        }
-        analogWrite(enA, speed > 0 ? speed : -speed);
+        analogWrite(enB, speed > 0 ? speed : -speed);
         speed2 = speed;
     }
 }
