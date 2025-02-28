@@ -1,9 +1,9 @@
 #include <Arduino.h>
 #include "components/DistanceSensor/DistanceSensor.h"
-#include "components/MotorController.h"
-#include "components/Motor.h"
-#include "components/LineSensor.h"
-#include "components/VelocitySensor.h"
+#include "components/MotorController/MotorController.h"
+#include "components/Motor/Motor.h"
+#include "components/LineSensor/LineSensor.h"
+#include "components/VelocitySensor/VelocitySensor.h"
 
 // put function declarations here:
 int myFunction(int, int);
