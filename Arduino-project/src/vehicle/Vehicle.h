@@ -14,7 +14,6 @@ class Vehicle : public IVehicle {
         Vehicle();
         void init() override;
         void update() override;
-        void setDesiredState(double velocity, double rotation, double distance) override;
         
         DistanceSensor getDistanceSensor();
         MotorController getMotorController();
