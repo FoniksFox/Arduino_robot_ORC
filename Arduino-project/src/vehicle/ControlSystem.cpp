@@ -41,6 +41,10 @@ void ControlSystem::init() {
 
     INTEGRAL_LIMIT = 1000;
     lastTime = millis();
+
+    // Specific for the obstacles course
+    leftLine = false;
+    obstacles = {{0}, {0}}; // 2 Lines
 }
 
 std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance) {
@@ -82,6 +86,9 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     distanceControl += distanceKd * (distance - lastDistance) / deltaT;
     if (distanceControl < 0) distanceControl = 0;
     lastDistance = distance;
+
+    // Specific for the obstacles course
+    // To be implemented
 
     // Calculate control signal
     controlSignal[0] = int(velocity1*Kvelocity + positionControl*Kposition - distanceControl*Kdistance);
