@@ -5,8 +5,6 @@
 #include "components/LineSensor/LineSensor.h"
 #include "components/VelocitySensor/VelocitySensor.h"
 
-// put function declarations here:
-int myFunction(int, int);
 
 // Components initialization
 DistanceSensor distanceSensor(13, 18);
@@ -19,20 +17,19 @@ VelocitySensor velocitySensor1(16);
 VelocitySensor velocitySensor2(17);
 
 void setup() {
-  // put your setup code here, to run once:
-  distanceSensor.init();
-  motor1.init();
-  motor2.init();
-  lineSensor.init();
-  velocitySensor1.init();
-  velocitySensor2.init();
+	Serial.begin(9600);
+  	// put your setup code here, to run once:
+  	distanceSensor.init();
+	motorController.init();
+  	motor1.init();
+  	motor2.init();
+  	lineSensor.init();
+  	velocitySensor1.init();
+  	velocitySensor2.init();
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-}
+ 	Serial.println("Running");
 
-// put function definitions here:
-int myFunction(int x, int y) {
-  return x + y;
+	delay(1000);
 }
