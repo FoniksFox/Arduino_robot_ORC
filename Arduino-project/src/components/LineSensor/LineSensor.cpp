@@ -31,3 +31,12 @@ double LineSensor::getLinePosition() { // Returns values between -3 and 3, excep
     }
     return position / sum;
 }
+
+bool LineSensor::isLineDetected() {
+    for(int i = 0; i < 8; i++) {
+        if(digitalRead(sensors[i]) == 1) {
+            return true;
+        }
+    }
+    return false;
+}
