@@ -15,8 +15,7 @@ LineSensor lineSensor(27, sensors);
 VelocitySensor velocitySensor1(16);
 VelocitySensor velocitySensor2(17);
 
-void setup()
-{
+void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   distanceSensor.init();
@@ -28,13 +27,13 @@ void setup()
   velocitySensor2.init();
 }
 
-void loop()
-{
+void loop() {
   motor1.setSpeed(255);
   motor2.setSpeed(255);
-  Serial.println(distanceSensor.getDistance());
-  Serial.println(velocitySensor1.getVelocity());
-  Serial.println(velocitySensor2.getVelocity());
+  Serial.println("Distance: " + String(distanceSensor.getDistance()));
+  Serial.println("Line: " + String(lineSensor.getLinePosition()));
+  Serial.println("Velocity 1: " + String(velocitySensor1.getVelocity()));
+  Serial.println("Velocity 2: " + String(velocitySensor2.getVelocity()));
   delay(1000);
   motor1.setSpeed(-255);
   motor2.setSpeed(-255);
