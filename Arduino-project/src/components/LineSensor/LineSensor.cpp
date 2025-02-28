@@ -9,6 +9,7 @@ LineSensor::LineSensor (int IR, int sensors[8]) : IR(IR) {
 
 void LineSensor::init() {
     pinMode(IR, OUTPUT);
+    digitalWrite(IR, HIGH);
     for(int i = 0; i < 8; i++) {
         pinMode(sensors[i], INPUT);
     }
@@ -20,6 +21,7 @@ double LineSensor::getLinePosition() { // Returns values between -3 and 3, excep
 
     for(int i = 0; i < 8; i++) {
         int value = digitalRead(sensors[i]);
+        Serial.println("Sensor " + String(i) + ": " + String(analogRead(sensors[i])));
         sum += value;
         position += value * (i - 3);
     }
