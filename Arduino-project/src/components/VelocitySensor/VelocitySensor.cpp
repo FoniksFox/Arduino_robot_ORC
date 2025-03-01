@@ -9,7 +9,15 @@ VelocitySensor::VelocitySensor(int pin) : pin(pin) {
 
 void VelocitySensor::init() {
     pinMode(pin, INPUT);
-    attachInterrupt(digitalPinToInterrupt(pin), handleInterrupt, RISING);
+    int interruptNumber = digitalPinToInterrupt(pin);
+    if (interruptNumber == NOT_AN_INTERRUPT) {
+        Serial.println("Error: Pin does not support interrupts");
+        return;
+    } else {
+        Serial.println("Interrupt number: " + String(interruptNumber));
+        attachInterrupt(interruptNumber, handleInterrupt, RISING);
+    }
+    
     lastTime = millis();
 }
 
@@ -25,7 +33,7 @@ void VelocitySensor::updateVelocity() {
     if (elapsedTime >= 100) { // Update every tenth of a second
         noInterrupts();
         int count = pulseCount;
-        pulseCount = 0;
+        pulseCount = 0; 
         interrupts();
 
         velocity = (count * 60) / elapsedTime; // Calculate RPM (each pulse is a full rotation)
@@ -35,6 +43,7 @@ void VelocitySensor::updateVelocity() {
 
 void VelocitySensor::handleInterrupt() {
     if (instance) {
+        Serial.println("Interrupt\n");
         instance->pulseCount++;
     }
 }
