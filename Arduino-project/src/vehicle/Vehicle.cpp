@@ -23,7 +23,9 @@ void Vehicle::init() {
 }
 
 void Vehicle::update() {
-    std::vector<int> controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance());
+    double desiredDirection = 0; // Later obtained from bluetooth
+    double maxSpeed = 100; // Later obtained from bluetooth
+    std::vector<int> controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), direction - desiredDirection, distanceSensor.getDistance(), maxSpeed);
 
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);

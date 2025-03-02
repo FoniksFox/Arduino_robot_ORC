@@ -6,7 +6,7 @@
 class ControlSystem{
     public:
         static void init();
-        static std::vector<int> update(double velocity1, double velocity2, double position, double distance);
+        static std::vector<int> update(double velocity1, double velocity2, double position, double distance, double maxSpeed);
 
     private:
         static double positionError;

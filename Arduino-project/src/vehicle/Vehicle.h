@@ -32,9 +32,9 @@ class Vehicle : public IVehicle {
         VelocitySensor velocitySensor1;
         VelocitySensor velocitySensor2;
 
-        double desiredVelocity = 0;
-        double desiredRotation = 0;
-        double desiredDistance = 0;
+        double direction;
+        double speed;
+        double rotation;
 };
 
 #endif // VEHICLE_H
