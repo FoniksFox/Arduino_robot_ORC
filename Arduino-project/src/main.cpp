@@ -12,7 +12,8 @@ Bluetooth bluetooth;
 
 void setup() {
     Serial.begin(9600);
-	bluetooth.setup();
+    bluetooth.begin();
+    
 }
 
 void loop() {
@@ -22,8 +23,7 @@ void loop() {
 
 	// Bluetooth handling
 	StaticJsonDocument<200> doc;
-	bluetooth.update(doc);
-
-	delay(100);
+	bluetooth.processQueue();
+	delay(50);
 }
 
