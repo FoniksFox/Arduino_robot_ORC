@@ -44,7 +44,10 @@ class Vehicle : public IVehicle, public Bluetooth {
         short line;
 
         // Maze solver specific variables
-        short maze[15][15];
+        short repetition;
+        short maze[49][49]; // Wheights matrix for the 7x7 maze, takes corners and straight lines into account
+        std::vector<short> mazeSolution; // Solution vector for the maze
+        short mazeSolutionIndex; // Index for the solution vector
         short mazeX;
         short mazeY;
         short mazeDirection;
