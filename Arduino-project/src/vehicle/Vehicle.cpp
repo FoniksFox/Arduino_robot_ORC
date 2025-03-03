@@ -1,5 +1,6 @@
 #include "Vehicle.h"
 #include <vector>
+#include <ArduinoJson.h>
 
 int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
 
@@ -60,6 +61,8 @@ void Vehicle::update() {
 
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
+
+    send(StaticJsonDocument<200>()); // Later add logging
 }
 
 DistanceSensor Vehicle::getDistanceSensor() {
@@ -88,4 +91,18 @@ VelocitySensor Vehicle::getVelocitySensor1() {
 
 VelocitySensor Vehicle::getVelocitySensor2() {
     return velocitySensor2;
+}
+
+void Vehicle::processOrder(StaticJsonDocument<200> doc) {
+    // Example orders
+    if (doc.containsKey("mode")) {
+        mode = doc["mode"];
+    }
+    if (doc.containsKey("velocity")) {
+        velocity = doc["velocity"];
+    }
+    if (doc.containsKey("direction")) {
+        direction = doc["direction"];
+    }
+
 }

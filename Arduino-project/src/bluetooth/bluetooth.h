@@ -8,11 +8,12 @@ class Bluetooth : public NimBLEServerCallbacks, public NimBLECharacteristicCallb
     public:
         Bluetooth();
         void setup();
-        void update(StaticJsonDocument<200> doc);
+        void send(StaticJsonDocument<200> doc);
 
         void onConnect(NimBLEServer* pServer) override;
         void onDisconnect(NimBLEServer* pServer) override;
         void onWrite(NimBLECharacteristic* pCharacteristic) override;
+        void virtual processOrder(StaticJsonDocument<200> doc) = 0;
 
     private:
         std::string SERVICE_UUID;
@@ -20,6 +21,6 @@ class Bluetooth : public NimBLEServerCallbacks, public NimBLECharacteristicCallb
         NimBLEServer* pServer;
         NimBLECharacteristic* pCharacteristic;
         bool deviceConnected;
-        unsigned long lastUpdateTime;
+        unsigned long lastSendTime;
 
 };

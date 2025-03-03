@@ -8,12 +8,14 @@
 #include "../components/Motor/Motor.h"
 #include "../components/LineSensor/LineSensor.h"
 #include "../components/VelocitySensor/VelocitySensor.h"
+#include "../bluetooth/Bluetooth.h"
 
-class Vehicle : public IVehicle {
+class Vehicle : public IVehicle, public Bluetooth {
     public:
         Vehicle();
         void init() override;
         void update() override;
+        void processOrder(StaticJsonDocument<200> doc) override;
         
         DistanceSensor getDistanceSensor();
         MotorController getMotorController();
@@ -44,7 +46,7 @@ class Vehicle : public IVehicle {
         short mazeX;
         short mazeY;
         short mazeDirection;
-        
+
 };
 
 #endif // VEHICLE_H

@@ -3,12 +3,12 @@
 
 Bluetooth::Bluetooth() {
     deviceConnected = false;
-    lastUpdateTime = 0;
+    lastSendTime = 0;
 
     SERVICE_UUID = "d7aa9e26-3527-416a-aaee-c7b1454642dd";
     CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
-    NimBLEDevice::init("We're thinking");
+    NimBLEDevice::init("ESP32-Robot");
     pServer = NimBLEDevice::createServer();
     pServer->setCallbacks(this);
     NimBLEService *pService = pServer->createService(SERVICE_UUID);
@@ -40,8 +40,8 @@ void Bluetooth::setup() {
     }
 }
 
-void Bluetooth::update(StaticJsonDocument<200> doc) {
-    if (millis() - lastUpdateTime < 100) return;
+void Bluetooth::send(StaticJsonDocument<200> doc) {
+    if (millis() - lastSendTime < 100) return;
     if (deviceConnected) {
         String jsonString;
         serializeJson(doc, jsonString);
@@ -77,24 +77,7 @@ void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
             return;
         }
 
-        const char* command = doc["command"];
-        Serial.print("Command type: ");
-        Serial.println(command);
-        
-
         // Command handling
-        if (strcmp(command, "move") == 0) {
-            const char* direction = doc["direction"];
-            Serial.print("Movement direction: ");
-            Serial.println(direction);
-        }
-        else if (strcmp(command, "set_param") == 0) {
-            const char* param = doc["param"];
-            int value = doc["value"];
-            Serial.print("Parameter update: ");
-            Serial.print(param);
-            Serial.print(" = ");
-            Serial.println(value);
-        }
+        processOrder(doc);
     }
 }
