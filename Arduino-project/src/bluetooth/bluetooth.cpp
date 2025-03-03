@@ -1,83 +1,225 @@
 #include "Bluetooth.h"
 #include <Arduino.h>
 
-Bluetooth::Bluetooth() {
-    deviceConnected = false;
-    lastSendTime = 0;
+Bluetooth::Bluetooth(const char* name) :
+    deviceName(name),
+    SERVICE_UUID ("d7aa9e26-3527-416a-aaee-c7b1454642dd"),
+    CHARACTERISTIC_UUID("beb5483e-36e1-4688-b7f5-ea07361b26a8"),
+    deviceConnected(false),
+    oldDeviceConnected(false),
+    lastUpdateTime(0),
+    connectionRetryDelay(500),
+    reconnectionAttempts(0),
+    commandCallback(nullptr) {
+}
 
-    SERVICE_UUID = "d7aa9e26-3527-416a-aaee-c7b1454642dd";
-    CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
 
-    NimBLEDevice::init("ESP32-Robot");
+bool Bluetooth::begin(){
+
+    // initialize
+    NimBLEDevice::init(deviceName);
+
+    // create connection
     pServer = NimBLEDevice::createServer();
+    if (!pServer) {
+        Serial.println("Failed to create connection");
+        return false;
+    }
+
     pServer->setCallbacks(this);
+
     NimBLEService *pService = pServer->createService(SERVICE_UUID);
+    if (!pService) {
+        Serial.println("Failed to create BLE service");
+        return false;
+    }
+
+    // Create characteristic
     pCharacteristic = pService->createCharacteristic(
         CHARACTERISTIC_UUID,
         NIMBLE_PROPERTY::READ |
-        NIMBLE_PROPERTY::WRITE_NR |  // Use WRITE_NR (Write Without Response)
-        NIMBLE_PROPERTY::INDICATE    // Use INDICATE instead of NOTIFY if needed
+        NIMBLE_PROPERTY::WRITE_NR |
+        NIMBLE_PROPERTY::INDICATE
     );
+   
+    if (!pCharacteristic) {
+        Serial.println("Failed to create BLE characteristic");
+        return false;
+    }
+   
     pCharacteristic->setCallbacks(this);
     pService->start();
-
+   
+    // Configure advertising
     NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
     pAdvertising->setScanResponse(true);
-    pAdvertising->setName("ESP32-Robot");
+    pAdvertising->setName(deviceName);
     pAdvertising->setMinInterval(0x20);  // 0x20 * 0.625ms = 20ms
-    pAdvertising->setMaxInterval(0x40);  // 0x40 * 0.625ms = 40ms
+    pAdvertising->setMaxInterval(0x40); // 0x40 * 0.625ms = 40ms
+   
+   
+   
+    // Start advertising
+    if (!pAdvertising->start()) {
+        Serial.println("Failed to start advertising");
+        return false;
+    }
+   
+    Serial.print("BLE server ready: ");
+    Serial.println(deviceName.c_str());
+    return true;
 
-    pAdvertising->start();
-
-    Serial.println("BLE server ready");
 }
 
-void Bluetooth::setup() {
-    while(!deviceConnected) {
-        delay(1000);
-        Serial.println("Waiting for device to connect");
+bool Bluetooth::waitForConnection(unsigned long timeout_ms) {
+    unsigned long startTime = millis();
+   
+    Serial.print("Waiting for BLE connection");
+    while (!deviceConnected) {
+        delay(500);
+        Serial.print(".");
+       
+        if (timeout_ms > 0 && (millis() - startTime > timeout_ms)) {
+            Serial.println("\nConnection timeout");
+            return false;
+        }
+    }
+   
+    Serial.println("\nDevice connected!");
+    return true;
+}
+
+
+void Bluetooth::update(const JsonDocument& doc) {
+    if (!commandQueue.empty()) {
+        String commandJson = commandQueue.front();
+        commandQueue.pop();  // Remove from queue
+
+
+        DynamicJsonDocument doc(512);
+        DeserializationError error = deserializeJson(doc, commandJson);
+
+
+        if (error) {
+            Serial.print("JSON parse error: ");
+            Serial.println(error.c_str());
+            return;
+        }
+
+
+        const char* command = doc["command"];
+        Serial.print("Processing command: ");
+        Serial.println(command);
+
+
+        // Handle commands
+        if (strcmp(command, "move") == 0) {
+            Serial.println("Executing move command...");
+        } else if (strcmp(command, "set_param") == 0) {
+            Serial.println("Updating parameter...");
+        }
+
+
+        delay(10); 
     }
 }
 
-void Bluetooth::send(StaticJsonDocument<200> doc) {
-    if (millis() - lastSendTime < 100) return;
-    if (deviceConnected) {
-        String jsonString;
-        serializeJson(doc, jsonString);
-        pCharacteristic->setValue(jsonString.c_str());
-        pCharacteristic->indicate();
-    }
+
+void Bluetooth::setCommandCallback(CommandCallback callback) {
+    commandCallback = callback;
 }
+
+
+void Bluetooth::sendResponse(const char* status, const char* message) {
+    if (!deviceConnected) return;
+   
+    StaticJsonDocument<256> response;
+    response["status"] = status;
+    if (message) {
+        response["message"] = message;
+    }
+   
+    String jsonString;
+    serializeJson(response, jsonString);
+   
+    pCharacteristic->setValue(jsonString.c_str());
+    pCharacteristic->notify();
+}
+
 
 void Bluetooth::onConnect(NimBLEServer* pServer) {
     deviceConnected = true;
+    reconnectionAttempts = 0;
+    connectionRetryDelay = 500;
     Serial.println("Device connected");
 }
+
 
 void Bluetooth::onDisconnect(NimBLEServer* pServer) {
     deviceConnected = false;
     Serial.println("Device disconnected");
-    delay(500);
-    NimBLEDevice::getAdvertising()->start();  // Correct restart method
 }
+
+
+void Bluetooth::restartAdvertising() {
+    reconnectionAttempts++;
+    if (reconnectionAttempts > 5) {
+        connectionRetryDelay = min(30000UL, connectionRetryDelay * 2);
+    }
+   
+    // Restart advertising
+    NimBLEDevice::getAdvertising()->start();
+    Serial.print("Restarted advertising. Retry delay: ");
+    Serial.print(connectionRetryDelay);
+    Serial.println("ms");
+}
+
 
 void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
     std::string value = pCharacteristic->getValue();
-    if (value.length() > 0) {
-        // Print the raw received data
-        Serial.print("Received command: ");
-        Serial.println(value.c_str());
-        
-        StaticJsonDocument<512> doc;
-        DeserializationError error = deserializeJson(doc, value.c_str());
+   
+    if (value.length() == 0) {
+        Serial.println("Received empty command");
+        sendResponse("error", "Empty command");
+        return;
+    }
+   
+    Serial.print("Queued command: ");
+    Serial.println(value.c_str());
+
+
+    commandQueue.push(value.c_str());
+}
+
+
+void Bluetooth::processQueue() {
+    if (!commandQueue.empty()) {
+        String commandJson = commandQueue.front();
+        commandQueue.pop(); 
+
+        DynamicJsonDocument doc(512);
+        DeserializationError error = deserializeJson(doc, commandJson);
+
 
         if (error) {
-            Serial.println("Failed to parse JSON");
+            Serial.print("JSON parse error: ");
+            Serial.println(error.c_str());
             return;
         }
 
-        // Command handling
-        processOrder(doc);
+
+        const char* command = doc["command"];
+        Serial.print("Processing command: ");
+        Serial.println(command);
+
+        if (strcmp(command, "move") == 0) {
+            Serial.println("Executing move");
+        } else if (strcmp(command, "set_param") == 0) {
+            Serial.println("Updating paramaters");
+        }
+
+
+        delay(10);  
     }
 }
