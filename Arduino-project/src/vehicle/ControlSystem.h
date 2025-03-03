@@ -17,13 +17,8 @@ class ControlSystem{
         static double positionKi;
         static double positionKd;
 
-        static double distanceKp;
-        static double distanceKd;
-        static double lastDistance;
-
         static double Kvelocity;
         static double Kposition;
-        static double Kdistance;
 
         static double INTEGRAL_LIMIT;
         static double lastTime;
