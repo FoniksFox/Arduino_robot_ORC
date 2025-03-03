@@ -32,9 +32,19 @@ class Vehicle : public IVehicle {
         VelocitySensor velocitySensor1;
         VelocitySensor velocitySensor2;
 
-        double desiredVelocity = 0;
-        double desiredRotation = 0;
-        double desiredDistance = 0;
+        double direction;
+        double velocity;
+        int mode;
+
+        // Obstacles course specific variables
+        short line;
+
+        // Maze solver specific variables
+        short maze[15][15];
+        short mazeX;
+        short mazeY;
+        short mazeDirection;
+        
 };
 
 #endif // VEHICLE_H

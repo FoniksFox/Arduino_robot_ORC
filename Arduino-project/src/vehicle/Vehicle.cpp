@@ -20,10 +20,43 @@ void Vehicle::init() {
     lineSensor.init();
     velocitySensor1.init();
     velocitySensor2.init();
+    ControlSystem::init();
+
+    velocity = 0;
+    direction = 0;
+    mode = 0;
 }
 
 void Vehicle::update() {
-    std::vector<int> controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance());
+    velocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
+    direction = direction + (velocitySensor1.getVelocity() - velocitySensor2.getVelocity()) / 2;
+    
+    std::vector<int> controlState = {0, 0};
+    switch (mode) {
+        case 0: // Wait still
+            break;
+        case 1: // Velocity
+            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), 1000);
+            if (distanceSensor.getDistance() < 10) {
+                mode = 0;
+            }
+            break;
+        case 2: // Obstacles course
+            if (distanceSensor.getDistance() < 20) {
+                // Change line
+            } else {
+                controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance());
+            }
+            break;
+        case 3: // Maze solver
+            // Implement maze solver
+            break;
+        case 4: // Football / Manual control
+            // Implement football
+            break;
+        default:
+            break;
+    }
 
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
