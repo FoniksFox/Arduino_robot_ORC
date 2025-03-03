@@ -17,11 +17,21 @@ class ControlSystem{
         static double positionKi;
         static double positionKd;
 
+        static double distanceError;
+        static double distanceKp;
+        static double distanceKd;
+        static double lastDistance;
+
         static double Kvelocity;
         static double Kposition;
+        static double Kdistance;
 
         static double INTEGRAL_LIMIT;
         static double lastTime;
+
+        // Specific for the obstacles course
+        static bool leftLine;
+        static std::vector<std::vector<int>> obstacles;
 };
 
 #endif // CONTROL_SYSTEM_H

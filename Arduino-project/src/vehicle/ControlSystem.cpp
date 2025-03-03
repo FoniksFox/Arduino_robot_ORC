@@ -31,8 +31,14 @@ void ControlSystem::init() {
     positionKi = 0.05;
     positionKd = 0.2;
 
+    distanceError = 0;
+    distanceKp = 0.1;
+    distanceKd = 0.1;
+    lastDistance = 0;
+
     Kvelocity = 0.4;
     Kposition = 0.7;
+    Kdistance = 0.3;
 
     INTEGRAL_LIMIT = 1000;
     lastTime = millis();
@@ -68,9 +74,16 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     }
     double positionControl = positionProportionalError + positionIntegral + positionDerivative;
 
+    // Take distante into account
+    double distanceControl = 0;
+    distanceControl += distanceKp * distance;
+    distanceControl += distanceKd * (distance - lastDistance) / deltaT;
+    if (distanceControl < 0) distanceControl = 0;
+    lastDistance = distance;
+
     // Calculate control signal
-    controlSignal[0] = int(velocity1*Kvelocity + positionControl*Kposition);
-    controlSignal[1] = int(velocity2*Kvelocity - positionControl*Kposition);
+    controlSignal[0] = int(velocity1*Kvelocity + positionControl*Kposition - distanceControl*Kdistance);
+    controlSignal[1] = int(velocity2*Kvelocity - positionControl*Kposition - distanceControl*Kdistance);
 
     // Normalize control signal, proportionally, to a max of [-255, 255]
     double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
