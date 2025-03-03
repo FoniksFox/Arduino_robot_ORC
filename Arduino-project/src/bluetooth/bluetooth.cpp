@@ -91,41 +91,6 @@ bool Bluetooth::waitForConnection(unsigned long timeout_ms) {
 }
 
 
-void Bluetooth::update(const JsonDocument& doc) {
-    if (!commandQueue.empty()) {
-        String commandJson = commandQueue.front();
-        commandQueue.pop();  // Remove from queue
-
-
-        DynamicJsonDocument doc(512);
-        DeserializationError error = deserializeJson(doc, commandJson);
-
-
-        if (error) {
-            Serial.print("JSON parse error: ");
-            Serial.println(error.c_str());
-            return;
-        }
-
-
-        const char* command = doc["command"];
-        Serial.print("Processing command: ");
-        Serial.println(command);
-
-
-        // Handle commands
-        if (strcmp(command, "move") == 0) {
-            Serial.println("Executing move command...");
-        } else if (strcmp(command, "set_param") == 0) {
-            Serial.println("Updating parameter...");
-        }
-
-
-        delay(10); 
-    }
-}
-
-
 void Bluetooth::setCommandCallback(CommandCallback callback) {
     commandCallback = callback;
 }
@@ -209,16 +174,7 @@ void Bluetooth::processQueue() {
         }
 
 
-        const char* command = doc["command"];
-        Serial.print("Processing command: ");
-        Serial.println(command);
-
-        if (strcmp(command, "move") == 0) {
-            Serial.println("Executing move");
-        } else if (strcmp(command, "set_param") == 0) {
-            Serial.println("Updating paramaters");
-        }
-
+        processOrder(doc);
 
         delay(10);  
     }

@@ -2,6 +2,26 @@
 #include <vector>
 #include <Arduino.h>
 
+// Define static member variables
+double ControlSystem::positionError;
+double ControlSystem::positionProportionalError;
+double ControlSystem::positionIntegral;
+double ControlSystem::positionDerivative;
+double ControlSystem::positionKp;
+double ControlSystem::positionKi;
+double ControlSystem::positionKd;
+
+double ControlSystem::distanceError;
+double ControlSystem::distanceKp;
+double ControlSystem::distanceKd;
+double ControlSystem::lastDistance;
+
+double ControlSystem::Kvelocity;
+double ControlSystem::Kposition;
+double ControlSystem::Kdistance;
+
+double ControlSystem::INTEGRAL_LIMIT;
+long long ControlSystem::lastTime;
 
 /* Control System diagram (may need improvements, like kalman filter and maybe a manual bypass):
 +-----------------+          ___________           +-----------------+       +-----------------+
@@ -22,7 +42,8 @@
                          +-----------------+                                 +-----------------+
 */
 
-void ControlSystem::init() {
+void ControlSystem::init()
+{
     positionError = 0;
     positionProportionalError = 0;
     positionIntegral = 0;
@@ -44,29 +65,41 @@ void ControlSystem::init() {
     lastTime = millis();
 }
 
-std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity) {
+std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity)
+{
     std::vector<int> controlSignal = {0, 0};
-    if (lastTime == 0) lastTime = millis();
+    if (lastTime == 0)
+        lastTime = millis();
     double deltaT = millis() - lastTime + 1e-6;
 
     // Calculate position errors
-    if (position == -10) { // No line detected
-        if (positionError < 0) {
+    if (position == -10)
+    { // No line detected
+        if (positionError < 0)
+        {
             // Turn left
             return {230, -230};
-        } else {
+        }
+        else
+        {
             // Turn right
             return {-230, 230};
         }
-    } else if (position == 10) { // Intersection detected
+    }
+    else if (position == 10)
+    { // Intersection detected
         positionError = 0;
-    } else { // Normal operation
+    }
+    else
+    { // Normal operation
         double error = position;
         positionProportionalError = positionKp * (error);
         positionIntegral += positionKi * error * deltaT / 1000;
         // Prevent integral windup
-        if (positionIntegral > INTEGRAL_LIMIT) positionIntegral = INTEGRAL_LIMIT;
-        if (positionIntegral < -INTEGRAL_LIMIT) positionIntegral = -INTEGRAL_LIMIT;
+        if (positionIntegral > INTEGRAL_LIMIT)
+            positionIntegral = INTEGRAL_LIMIT;
+        if (positionIntegral < -INTEGRAL_LIMIT)
+            positionIntegral = -INTEGRAL_LIMIT;
 
         positionDerivative = positionKd * (error - positionError) / deltaT;
 
@@ -78,16 +111,18 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     double distanceControl = 0;
     distanceControl += distanceKp * distance;
     distanceControl += distanceKd * (distance - lastDistance) / deltaT;
-    if (distanceControl < 0) distanceControl = 0;
+    if (distanceControl < 0)
+        distanceControl = 0;
     lastDistance = distance;
 
     // Calculate control signal
-    controlSignal[0] = int(velocity1*Kvelocity + positionControl*Kposition - distanceControl*Kdistance);
-    controlSignal[1] = int(velocity2*Kvelocity - positionControl*Kposition - distanceControl*Kdistance);
+    controlSignal[0] = int(velocity1 * Kvelocity + positionControl * Kposition - distanceControl * Kdistance);
+    controlSignal[1] = int(velocity2 * Kvelocity - positionControl * Kposition - distanceControl * Kdistance);
 
-    // Normalize control signal, proportionally, to a max of [-255, 255]
+    // Normalize control signal, proportionally to desired velocity
     double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
-    if (maxControlSignal > desiredVelocity) {
+    if (maxControlSignal > desiredVelocity)
+    {
         controlSignal[0] = controlSignal[0] * desiredVelocity / maxControlSignal;
         controlSignal[1] = controlSignal[1] * desiredVelocity / maxControlSignal;
     }

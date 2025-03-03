@@ -22,9 +22,6 @@ class Bluetooth : public NimBLEServerCallbacks, public NimBLECharacteristicCallb
         // Wait for connection with timeout
         bool waitForConnection(unsigned long timeout_ms = 30000);
         
-        // Update data to send to client
-        void update(const JsonDocument& doc);
-        
         // Register command handler
         void setCommandCallback(CommandCallback callback);
         
@@ -39,11 +36,13 @@ class Bluetooth : public NimBLEServerCallbacks, public NimBLECharacteristicCallb
         void onDisconnect(NimBLEServer* pServer) override;
         void onWrite(NimBLECharacteristic* pCharacteristic) override;
 
+        virtual void processOrder(StaticJsonDocument<200> doc) = 0;
+
         void processQueue();
 
-    private:
-        // BLE related variables
         std::string deviceName;
+
+        // BLE related variables
         std::string SERVICE_UUID;
         std::string CHARACTERISTIC_UUID;
         std::queue<String> commandQueue;

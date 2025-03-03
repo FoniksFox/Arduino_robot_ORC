@@ -27,11 +27,7 @@ class ControlSystem{
         static double Kdistance;
 
         static double INTEGRAL_LIMIT;
-        static double lastTime;
-
-        // Specific for the obstacles course
-        static bool leftLine;
-        static std::vector<std::vector<int>> obstacles;
+        static long long lastTime;
 };
 
 #endif // CONTROL_SYSTEM_H

@@ -9,12 +9,14 @@ LineSensor::LineSensor(int IR, int sensors[8]) : IR(IR)
     }
 }
 
-void LineSensor::init()
-{
+void LineSensor::init() {
+    Serial.println("Line sensor initializing");
     pinMode(IR, OUTPUT);
+    Serial.println("IR sensor initialized");
     digitalWrite(IR, HIGH);
-    for (int i = 0; i < 8; i++)
-    {
+    Serial.println("IR sensor activated");
+    for (int i = 0; i < 8; i++) {
+        Serial.println(sensors[i]);
         pinMode(sensors[i], INPUT);
     }
 }

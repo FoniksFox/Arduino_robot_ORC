@@ -9,23 +9,45 @@ Vehicle::Vehicle() :
     motorController(14, 19, 23, 22, 12, 21), 
     motor1(motorController, 1), 
     motor2(motorController, 2), 
-    lineSensor(11, sensors), 
+    lineSensor(27, sensors), 
     velocitySensor1(16), 
     velocitySensor2(17) {}
 
 void Vehicle::init() {
     distanceSensor.init();
+    Serial.println("Distance sensor initialized");
     motorController.init();
+    Serial.println("Motor controller initialized");
     motor1.init();
+    Serial.println("Motor 1 initialized");
     motor2.init();
+    Serial.println("Motor 2 initialized");
     lineSensor.init();
+    Serial.println("Line sensor initialized");
     velocitySensor1.init();
+    Serial.println("Velocity sensor 1 initialized");
     velocitySensor2.init();
+    Serial.println("Velocity sensor 2 initialized");
     ControlSystem::init();
+    Serial.println("Control system initialized");
+    
+    deviceName = "ESP32-Robot";
+    SERVICE_UUID = "d7aa9e26-3527-416a-aaee-c7b1454642dd";
+    CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
+    deviceConnected = false;
+    oldDeviceConnected = false;
+    lastUpdateTime = 0;
+    connectionRetryDelay = 500;
+    reconnectionAttempts = 0;
+    commandCallback = nullptr;
+    Serial.println("Vehicle initializing");
+    begin();
 
     velocity = 0;
     direction = 0;
     mode = 0;
+
+    waitForConnection();
 }
 
 void Vehicle::update() {
@@ -54,7 +76,7 @@ void Vehicle::update() {
             break;
         case 4: // Football / Manual control
             // Implement football
-            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), desiredDirection - direction, distanceSensor.getDistance(), desiredVelocity);
+            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), desiredDirection - direction, 1000, desiredVelocity);
             break;
         default:
             break;
@@ -63,7 +85,8 @@ void Vehicle::update() {
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
 
-    send(StaticJsonDocument<200>()); // Later add logging
+    processQueue();
+    // Later add logging
 }
 
 DistanceSensor Vehicle::getDistanceSensor() {
@@ -96,14 +119,19 @@ VelocitySensor Vehicle::getVelocitySensor2() {
 
 void Vehicle::processOrder(StaticJsonDocument<200> doc) {
     // Example orders
-    if (doc.containsKey("mode")) {
-        mode = doc["mode"];
-    }
-    if (doc.containsKey("velocity")) {
-        velocity = doc["velocity"];
-    }
-    if (doc.containsKey("direction")) {
-        direction = doc["direction"];
+    int command = doc["command"];
+    switch (command) {
+        case 0: // Stop
+            mode = 0;
+            break;
+        case 1: // Start
+            mode = 1;
+            break;
+        case 2: // Obstacles course
+            mode = 2;
+            break;
+        default:
+            break;
     }
 
 }
