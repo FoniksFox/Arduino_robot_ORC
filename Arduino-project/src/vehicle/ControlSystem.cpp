@@ -44,7 +44,7 @@ void ControlSystem::init() {
     lastTime = millis();
 }
 
-std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance) {
+std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity) {
     std::vector<int> controlSignal = {0, 0};
     if (lastTime == 0) lastTime = millis();
     double deltaT = millis() - lastTime + 1e-6;
@@ -87,9 +87,9 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
 
     // Normalize control signal, proportionally, to a max of [-255, 255]
     double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
-    if (maxControlSignal > 255) {
-        controlSignal[0] = controlSignal[0] * 255 / maxControlSignal;
-        controlSignal[1] = controlSignal[1] * 255 / maxControlSignal;
+    if (maxControlSignal > desiredVelocity) {
+        controlSignal[0] = controlSignal[0] * desiredVelocity / maxControlSignal;
+        controlSignal[1] = controlSignal[1] * desiredVelocity / maxControlSignal;
     }
 
     lastTime = millis();

@@ -37,7 +37,7 @@ void Vehicle::update() {
         case 0: // Wait still
             break;
         case 1: // Velocity
-            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), 1000);
+            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), 1000, 255);
             if (distanceSensor.getDistance() < 10) {
                 mode = 0;
             }
@@ -46,7 +46,7 @@ void Vehicle::update() {
             if (distanceSensor.getDistance() < 20) {
                 // Change line
             } else {
-                controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance());
+                controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance(), 255);
             }
             break;
         case 3: // Maze solver
@@ -54,6 +54,7 @@ void Vehicle::update() {
             break;
         case 4: // Football / Manual control
             // Implement football
+            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), desiredDirection - direction, distanceSensor.getDistance(), desiredVelocity);
             break;
         default:
             break;

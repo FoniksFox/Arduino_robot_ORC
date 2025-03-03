@@ -35,7 +35,9 @@ class Vehicle : public IVehicle, public Bluetooth {
         VelocitySensor velocitySensor2;
 
         double direction;
+        double desiredDirection;
         double velocity;
+        double desiredVelocity;
         int mode;
 
         // Obstacles course specific variables
