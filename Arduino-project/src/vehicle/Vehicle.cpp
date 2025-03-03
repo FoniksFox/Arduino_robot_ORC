@@ -11,25 +11,18 @@ Vehicle::Vehicle() :
     motor2(motorController, 2), 
     lineSensor(27, sensors), 
     velocitySensor1(16), 
-    velocitySensor2(17) {}
+    velocitySensor2(17) 
+{}
 
 void Vehicle::init() {
     distanceSensor.init();
-    Serial.println("Distance sensor initialized");
     motorController.init();
-    Serial.println("Motor controller initialized");
     motor1.init();
-    Serial.println("Motor 1 initialized");
     motor2.init();
-    Serial.println("Motor 2 initialized");
     lineSensor.init();
-    Serial.println("Line sensor initialized");
     velocitySensor1.init();
-    Serial.println("Velocity sensor 1 initialized");
     velocitySensor2.init();
-    Serial.println("Velocity sensor 2 initialized");
     ControlSystem::init();
-    Serial.println("Control system initialized");
     
     deviceName = "ESP32-Robot";
     SERVICE_UUID = "d7aa9e26-3527-416a-aaee-c7b1454642dd";
@@ -40,12 +33,15 @@ void Vehicle::init() {
     connectionRetryDelay = 500;
     reconnectionAttempts = 0;
     commandCallback = nullptr;
-    Serial.println("Vehicle initializing");
     begin();
 
     velocity = 0;
     direction = 0;
     mode = 0;
+
+    line = 0;
+    desiredDirection = 0;
+    desiredVelocity = 0;
 
     waitForConnection();
 }
@@ -66,7 +62,16 @@ void Vehicle::update() {
             break;
         case 2: // Obstacles course
             if (distanceSensor.getDistance() < 20) {
-                // Change line
+                if (line = 0) {
+                    controlState = {255, -255};
+                    line = 1;
+                } else {
+                    controlState = {-255, 255};
+                    line = 0;
+                }
+                motor1.setSpeed(controlState[0]);
+                motor2.setSpeed(controlState[1]);
+                delay(1000);
             } else {
                 controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance(), 255);
             }
@@ -75,7 +80,6 @@ void Vehicle::update() {
             // Implement maze solver
             break;
         case 4: // Football / Manual control
-            // Implement football
             controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), desiredDirection - direction, 1000, desiredVelocity);
             break;
         default:
