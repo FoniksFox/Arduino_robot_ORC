@@ -186,7 +186,18 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             mode = 0;
             break;
         case 1: // Set mode
-            mode = doc[1];
+            if (doc[1] == 3) {
+                mode = 3;
+                repetition = 0;
+            } else if (doc[1] == 5) {
+                mode = 3;
+                repetition = 1;
+            } else if (doc[1] == 6) {
+                mode = 3;
+                repetition = 2;
+            } else {
+                mode = doc[1];
+            }
             break;
         case 2: // Set constants
             ControlSystem::positionKp = doc[1] / 100.0;
