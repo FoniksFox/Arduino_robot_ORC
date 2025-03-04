@@ -8,15 +8,15 @@
 #include "../components/Motor/Motor.h"
 #include "../components/LineSensor/LineSensor.h"
 #include "../components/VelocitySensor/VelocitySensor.h"
+#include "../bluetooth/Bluetooth.h"
 
-class Vehicle : public IVehicle {
+class Vehicle : public IVehicle, public Bluetooth {
     public:
         Vehicle();
         void init() override;
         void update() override;
-        void setDesiredState(double velocity, double rotation, double distance) override;
+        void processOrder(StaticJsonDocument<200> doc) override;
         
-        ControlSystem getControlSystem();
         DistanceSensor getDistanceSensor();
         MotorController getMotorController();
         Motor getMotor1();
@@ -26,7 +26,6 @@ class Vehicle : public IVehicle {
         VelocitySensor getVelocitySensor2();
 
     private:
-        ControlSystem controlSystem;
         DistanceSensor distanceSensor;
         MotorController motorController;
         Motor motor1;
@@ -35,9 +34,24 @@ class Vehicle : public IVehicle {
         VelocitySensor velocitySensor1;
         VelocitySensor velocitySensor2;
 
-        double desiredVelocity = 0;
-        double desiredRotation = 0;
-        double desiredDistance = 0;
+        double direction;
+        double desiredDirection;
+        double velocity;
+        double desiredVelocity;
+        int mode;
+
+        // Obstacles course specific variables
+        short line;
+
+        // Maze solver specific variables
+        short repetition;
+        short maze[49][49]; // Wheights matrix for the 7x7 maze, takes corners and straight lines into account
+        std::vector<short> mazeSolution; // Solution vector for the maze
+        short mazeSolutionIndex; // Index for the solution vector
+        short mazeX;
+        short mazeY;
+        short mazeDirection;
+
 };
 
 #endif // VEHICLE_H

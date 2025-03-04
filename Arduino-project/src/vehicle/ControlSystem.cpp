@@ -2,63 +2,131 @@
 #include <vector>
 #include <Arduino.h>
 
+// Define static member variables
+double ControlSystem::positionError;
+double ControlSystem::positionProportionalError;
+double ControlSystem::positionIntegral;
+double ControlSystem::positionDerivative;
+double ControlSystem::positionKp;
+double ControlSystem::positionKi;
+double ControlSystem::positionKd;
+
+double ControlSystem::distanceError;
+double ControlSystem::distanceKp;
+double ControlSystem::distanceKd;
+double ControlSystem::lastDistance;
+
+double ControlSystem::Kvelocity;
+double ControlSystem::Kposition;
+double ControlSystem::Kdistance;
+
+double ControlSystem::INTEGRAL_LIMIT;
+long long ControlSystem::lastTime;
 
 /* Control System diagram (may need improvements, like kalman filter and maybe a manual bypass):
 +-----------------+          ___________           +-----------------+       +-----------------+
-|   Desired       |         /           \          |   Controller    |       |   Actuators     |
-|    State        |      - /             \         |                 |       |                 |
+|  Theoretical    |         /           \          |   Controller    |       |   Actuators     |
+|    State        |      + /             \         |                 |       |                 |
 |   (Vector)      +------>|               |------->+                 +------>+                 |
-|   [v, r, d]     |        \             /         |   PID Control   |       |  Motors, etc.   |
-|                 |         \___________/          |   (Vector)      |       |                 |
-+-----------------+               ^ +              +--------+--------+       +-----------------+
-                                  |                         |
-                                  |                         |
-                                  |                         v
-                         +--------+--------+       +--------+--------+
-                         |   Sensors       |       |   Vehicle       |
-                         |   (Vector)      |       |  Dynamics       |
-                         |   [v, r, d]     +<------+                 |
-                         |                 |       |                 |
-                         +-----------------+       +-----------------+
+|    [v1, v2]     |        \             /         |   PID Control   |       |     Motors      |
+|                 |         \___________/          |   (Vector)      |       |    [v1, v2]     |
++-----------------+               ^ -              +-----------------+       +--------+--------+
+                                  |                                                   |
+                                  |                                                   |
+                                  |                                                   v
+                         +--------+--------+                                 +--------+--------+
+                         |   Sensors       |                                 |   Vehicle       |
+                         |   (Vector)      |                                 |  Dynamics       |
+                         | [v1, v2, p, d]  +<--------------------------------+                 |
+                         |                 |                                 |                 |
+                         +-----------------+                                 +-----------------+
 */
 
-void ControlSystem::init() {
-    // does nothing
+void ControlSystem::init()
+{
+    positionError = 0;
+    positionProportionalError = 0;
+    positionIntegral = 0;
+    positionDerivative = 0;
+    positionKp = 0.6;
+    positionKi = 0.05;
+    positionKd = 0.2;
+
+    distanceError = 0;
+    distanceKp = 0.1;
+    distanceKd = 0.1;
+    lastDistance = 0;
+
+    Kvelocity = 0.4;
+    Kposition = 0.7;
+    Kdistance = 0.3;
+
+    INTEGRAL_LIMIT = 1000;
+    lastTime = millis();
 }
 
-std::vector<double> ControlSystem::update(std::vector<double> currentState, std::vector<double> desiredState) {
-    std::vector<double> controlSignal = {0, 0, 0};
-    // Calculate errors
-    for (size_t i = 0; i < error.size(); ++i) {
-        error[i] = desiredState[i] - currentState[i];
+std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity)
+{
+    std::vector<int> controlSignal = {0, 0};
+    if (lastTime == 0)
+        lastTime = millis();
+    double deltaT = millis() - lastTime + 1e-6;
 
-        integral[i] += error[i] * (millis() - lastTime);
-        // Prevent integral windup
-        if (integral[i] > INTEGRAL_LIMIT) integral[i] = INTEGRAL_LIMIT;
-        if (integral[i] < -INTEGRAL_LIMIT) integral[i] = -INTEGRAL_LIMIT;
-
-        derivative[i] = error[i] - lastError[i] / (millis() - lastTime);
-
-        controlSignal[i] = kp[i] * error[i] + ki[i] * integral[i] + kd[i] * derivative[i];
-    }
-
-    // Apply cross-coupling terms
-    for (size_t i = 0; i < controlSignal.size(); ++i) {
-        for (size_t j = 0; j < controlSignal.size(); ++j) {
-            if (i != j) {
-                controlSignal[i] += crossKp[i][j] * error[j] + crossKi[i][j] * integral[j] + crossKd[i][j] * derivative[j];
-            }
+    // Calculate position errors
+    if (position == -10)
+    { // No line detected
+        if (positionError < 0)
+        {
+            // Turn left
+            return {230, -230};
+        }
+        else
+        {
+            // Turn right
+            return {-230, 230};
         }
     }
+    else if (position == 10)
+    { // Intersection detected
+        positionError = 0;
+    }
+    else
+    { // Normal operation
+        double error = position;
+        positionProportionalError = positionKp * (error);
+        positionIntegral += positionKi * error * deltaT / 1000;
+        // Prevent integral windup
+        if (positionIntegral > INTEGRAL_LIMIT)
+            positionIntegral = INTEGRAL_LIMIT;
+        if (positionIntegral < -INTEGRAL_LIMIT)
+            positionIntegral = -INTEGRAL_LIMIT;
 
-    // Feedforward control
-    std::vector<double> feedforward = {desiredState[0] * FEEDFORWARD_GAIN, desiredState[1] * FEEDFORWARD_GAIN, desiredState[2] * FEEDFORWARD_GAIN};
-    for (size_t i = 0; i < controlSignal.size(); ++i) {
-        controlSignal[i] += feedforward[i];  // Adjust for faster response
+        positionDerivative = positionKd * (error - positionError) / deltaT;
+
+        positionError = error;
+    }
+    double positionControl = positionProportionalError + positionIntegral + positionDerivative;
+
+    // Take distante into account
+    double distanceControl = 0;
+    distanceControl += distanceKp * distance;
+    distanceControl += distanceKd * (distance - lastDistance) / deltaT;
+    if (distanceControl < 0)
+        distanceControl = 0;
+    lastDistance = distance;
+
+    // Calculate control signal
+    controlSignal[0] = int(velocity1 * Kvelocity + positionControl * Kposition - distanceControl * Kdistance);
+    controlSignal[1] = int(velocity2 * Kvelocity - positionControl * Kposition - distanceControl * Kdistance);
+
+    // Normalize control signal, proportionally to desired velocity
+    double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
+    if (maxControlSignal > desiredVelocity)
+    {
+        controlSignal[0] = controlSignal[0] * desiredVelocity / maxControlSignal;
+        controlSignal[1] = controlSignal[1] * desiredVelocity / maxControlSignal;
     }
 
     lastTime = millis();
-    lastError = error;
-
     return controlSignal;
 }
