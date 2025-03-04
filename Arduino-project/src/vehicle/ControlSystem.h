@@ -7,8 +7,7 @@ class ControlSystem{
     public:
         static void init();
         static std::vector<int> update(double velocity1, double velocity2, double position, double distance, double desiredVelocity);
-
-    private:
+        
         static double positionError;
         static double positionProportionalError;
         static double positionIntegral;

@@ -178,16 +178,37 @@ VelocitySensor Vehicle::getVelocitySensor2() {
 
 void Vehicle::processOrder(StaticJsonDocument<200> doc) {
     // Example orders
-    int command = doc["command"];
+    int command = doc[0];
     switch (command) {
-        case 0: // Stop
+        case 0: // Stop vehicle
             mode = 0;
             break;
-        case 1: // Start
-            mode = 1;
+        case 1: // Set mode
+            mode = doc[1];
             break;
-        case 2: // Obstacles course
-            mode = 2;
+        case 2: // Set constants
+            ControlSystem::positionKp = doc[1] / 100.0;
+            ControlSystem::positionKi = doc[2] / 100.0;
+            ControlSystem::positionKd = doc[3] / 100.0;
+            ControlSystem::distanceKp = doc[4] / 100.0;
+            ControlSystem::distanceKd = doc[5] / 100.0;
+            ControlSystem::Kvelocity = doc[6] / 100.0;
+            ControlSystem::Kposition = doc[7] / 100.0;
+            ControlSystem::Kdistance = doc[8] / 100.0;
+            ControlSystem::INTEGRAL_LIMIT = doc[9];
+            break;
+        case 3: // Joystick
+            int angle = doc[1];
+            if (angle > 180) {
+                angle = angle - 360;
+            } else if (angle < -180) {
+                angle = angle + 360;
+            }
+            desiredDirection = angle;
+            desiredVelocity = doc[2];
+            break;
+        case 4: // Reset direction
+            direction = 0;
             break;
         default:
             break;
