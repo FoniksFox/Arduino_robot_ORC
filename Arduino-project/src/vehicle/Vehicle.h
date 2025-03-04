@@ -16,6 +16,7 @@ class Vehicle : public IVehicle, public Bluetooth {
         void init() override;
         void update() override;
         void processOrder(StaticJsonDocument<200> doc) override;
+        void dfs(int x, int y);
         
         DistanceSensor getDistanceSensor();
         MotorController getMotorController();

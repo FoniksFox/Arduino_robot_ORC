@@ -1,6 +1,7 @@
 #include "Vehicle.h"
 #include <vector>
 #include <ArduinoJson.h>
+#include <stack>
 
 int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
 
@@ -100,31 +101,83 @@ void Vehicle::update() {
         case 3: // Maze solver
             // Implement maze solver
             if (repetition == 0) {
+                // Update maze direction to match, approximately the current direction, with a 15 degree tolerance, with -180 to 180 range
+                if (direction > -15 && direction < 15) mazeDirection = 0;
+                else if (direction > 75 && direction < 105) mazeDirection = 90;
+                else if (direction > 165 || direction < -165) mazeDirection = 180;
+                else if (direction > -105 && direction < -75) mazeDirection = -90;
+                // Go to desired direction
+                if (mazeDirection != desiredDirection) {
+                    controlState = {100, -100};
+                    break;
+                }
+                // Check if maze is solved
+                
+
                 // Maze recognition, run dfs
                 if (distanceSensor.getDistance() < 10) {
-                    // Wall ahead
-                    if (direction == 0) {
-                        maze[7*mazeY + mazeX][7*(mazeY-1) + mazeX] = 1;
-                    } else if (direction == 90) {
-                        maze[7*mazeY + mazeX][7*mazeY* + (mazeX+1)] = 2;
-                    } else if (direction == 180) {
-                        maze[7*mazeY + mazeX][7*(mazeY+1) + mazeX] = 1;
-                    } else if (direction == 270) {
-                        maze[7*mazeY + mazeX][7*mazeY* + (mazeX-1)] = 2;
+                    // Wall ahead, set weight to 100
+                    if (mazeDirection == 0) {
+                        maze[7*mazeY + mazeX][7*(mazeY-1) + mazeX] = 100;
+                    } else if (mazeDirection == 90) {
+                        maze[7*mazeY + mazeX][7*mazeY + (mazeX+1)] = 100;
+                    } else if (mazeDirection == 180) {
+                        maze[7*mazeY + mazeX][7*(mazeY+1) + mazeX] = 100;
+                    } else if (mazeDirection == -90) {
+                        maze[7*mazeY + mazeX][7*mazeY + (mazeX-1)] = 100;
                     }
                 }
-                // Check next direction
+                if (distanceSensor.getDistance() > 10) {
+                    // No wall ahead, set weight to 1
+                    if (mazeDirection == 0) {
+                        maze[7*mazeY + mazeX][7*(mazeY-1) + mazeX] = 1;
+                    } else if (mazeDirection == 90) {
+                        maze[7*mazeY + mazeX][7*mazeY + (mazeX+1)] = 1;
+                    } else if (mazeDirection == 180) {
+                        maze[7*mazeY + mazeX][7*(mazeY+1) + mazeX] = 1;
+                    } else if (mazeDirection == -90) {
+                        maze[7*mazeY + mazeX][7*mazeY + (mazeX-1)] = 1;
+                    }
+                }
+                // Check all directions
                 if (maze[7*mazeY + mazeX][7*(mazeY-1) + mazeX] == -1) {
                     desiredDirection = 0;
-                } else if (maze[7*mazeY + mazeX][7*mazeY* + (mazeX+1)] == -1) {
+                } else if (maze[7*mazeY + mazeX][7*mazeY + (mazeX+1)] == -1) {
                     desiredDirection = 90;
                 } else if (maze[7*mazeY + mazeX][7*(mazeY+1) + mazeX] == -1) {
                     desiredDirection = 180;
-                } else if (maze[7*mazeY + mazeX][7*mazeY* + (mazeX-1)] == -1) {
+                } else if (maze[7*mazeY + mazeX][7*mazeY + (mazeX-1)] == -1) {
                     desiredDirection = 270;
                 } else {
-                    // Run dfs
+                    // Run dfs to get next node direction
+                    dfs(mazeX, mazeY);
+                }
+                // Move to next node
+                if (mazeDirection == desiredDirection && distanceSensor.getDistance() > 10) {
+                    controlState = {150, 150};
+                    motor1.setSpeed(controlState[0]);
+                    motor2.setSpeed(controlState[1]);
+                    while(!lineSensor.isLineDetected()) {
+                        delay(100);
+                    }
+                    // Line detected, move coordinates
+                    if (mazeDirection == 0) mazeY--;
+                    if (mazeDirection == 90) mazeX++;
+                    if (mazeDirection == 180) mazeY++;
+                    if (mazeDirection == 270) mazeX--;
+                    
+                    // Correct direction
+                    controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), desiredDirection - direction, 1000, 100);
+                    motor1.setSpeed(controlState[0]);
+                    motor2.setSpeed(controlState[1]);
+                    delay(500);
 
+                    // Move to center of node
+                    motor1.setSpeed(100);
+                    motor2.setSpeed(100);
+                    delay(500);
+                    controlState = {0, 0};
+                
                 }
             } else if (repetition == 1) {
                 // Run maze with lax speed
@@ -216,4 +269,34 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             break;
     }
 
+}
+
+void Vehicle::dfs(int x, int y) {
+    std::stack<std::pair<int, int>> stack;
+    stack.push({x, y});
+
+    while (!stack.empty()) {
+        auto [currentX, currentY] = stack.top();
+        stack.pop();
+
+        // Check all directions
+        if (maze[7*currentY + currentX][7*(currentY-1) + currentX] == 1) {
+            stack.push({currentX, currentY-1});
+            desiredDirection = 0;
+            return;
+        } else if (maze[7*currentY + currentX][7*currentY + (currentX+1)] == 1) {
+            stack.push({currentX+1, currentY});
+            desiredDirection = 90;
+            return;
+        } else if (maze[7*currentY + currentX][7*(currentY+1) + currentX] == 1) {
+            stack.push({currentX, currentY+1});
+            desiredDirection = 180;
+            return;
+        } else if (maze[7*currentY + currentX][7*currentY + (currentX-1)] == 1) {
+            stack.push({currentX-1, currentY});
+            desiredDirection = 270;
+            return;
+        }
+    }
+    // No more nodes to visit, proceed to exit
 }
