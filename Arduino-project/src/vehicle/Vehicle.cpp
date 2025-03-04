@@ -60,8 +60,8 @@ void Vehicle::init() {
 }
 
 void Vehicle::update() {
-    velocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
-    direction = direction + (velocitySensor1.getVelocity() - velocitySensor2.getVelocity()) / 2;
+    velocity = (motor1.getSpeed() + motor2.getSpeed()) / 2;
+    direction = direction + (motor1.getSpeed() - motor2.getSpeed()) / 2;
     if (direction > 180) {
         direction = direction - 360;
     } else if (direction < -180) {
@@ -134,7 +134,7 @@ void Vehicle::update() {
             break;
 
         case 4: // Football / Manual control
-            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), desiredDirection - direction, 1000, desiredVelocity);
+            controlState = ControlSystem::update(motor1.getSpeed(), motor2.getSpeed(), desiredDirection - direction, 1000, desiredVelocity);
             break;
 
         default:
