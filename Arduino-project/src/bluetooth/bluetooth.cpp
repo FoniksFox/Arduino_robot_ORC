@@ -172,8 +172,6 @@ void Bluetooth::processQueue() {
             Serial.println(error.c_str());
             return;
         }
-
-
         processOrder(doc);
 
         delay(10);  
