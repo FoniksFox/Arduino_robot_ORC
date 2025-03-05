@@ -37,7 +37,7 @@ void Vehicle::init() {
 
     velocity = 0;
     direction = 0;
-    mode = 0;
+    mode = 4;
 
     line = 0;
     desiredDirection = 0;
@@ -67,13 +67,16 @@ void Vehicle::update() {
     } else if (direction < -180) {
         direction = direction + 360;
     }
-    
     std::vector<int> controlState = {0, 0};
+    //Serial.println("MODE" + mode);
+    //mode = 4;
     switch (mode) {
         case 0: // Wait still
+            Serial.println("Nothing");
             break;
 
         case 1: // Velocity
+            Serial.println("Velocity Challenge");
             controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), 1000, 255);
             if (distanceSensor.getDistance() < 10) {
                 mode = 0;
@@ -81,6 +84,7 @@ void Vehicle::update() {
             break;
 
         case 2: // Obstacles course
+            Serial.println("Obstacle Course");
             if (distanceSensor.getDistance() < 20) {
                 if (line = 0) {
                     controlState = {255, -255};
@@ -98,6 +102,7 @@ void Vehicle::update() {
             break;
 
         case 3: // Maze solver
+            Serial.println("Maze Solver");
             // Implement maze solver
             if (repetition == 0) {
                 // Maze recognition, run dfs
@@ -134,12 +139,14 @@ void Vehicle::update() {
             break;
 
         case 4: // Football / Manual control
+            Serial.println("Manual control");
             controlState = ControlSystem::update(motor1.getSpeed(), motor2.getSpeed(), desiredDirection - direction, 1000, desiredVelocity);
             break;
 
         default:
             break;
     }
+
 
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
@@ -180,40 +187,61 @@ VelocitySensor Vehicle::getVelocitySensor2() {
 
 void Vehicle::processOrder(StaticJsonDocument<200> doc) {
     // Example orders
-    int command = doc[0];
+    int command = doc["0"].as<int>();
+    Serial.println(command);
     switch (command) {
         case 0: // Stop vehicle
+            Serial.println("Vehicle stopped...");
             mode = 0;
             break;
         case 1: // Set mode
-            mode = doc[1];
+            Serial.println("Changing Mode...");
+            if (doc["1"] == 3) {
+                mode = 3;
+                repetition = 0;
+            } else if (doc["1"] == 5) {
+                mode = 3;
+                repetition = 1;
+            } else if (doc["1"] == 6) {
+                mode = 3;
+                repetition = 2;
+            } else {
+                mode = doc["1"];
+            }
             break;
         case 2: // Set constants
-            ControlSystem::positionKp = doc[1] / 100.0;
-            ControlSystem::positionKi = doc[2] / 100.0;
-            ControlSystem::positionKd = doc[3] / 100.0;
-            ControlSystem::distanceKp = doc[4] / 100.0;
-            ControlSystem::distanceKd = doc[5] / 100.0;
-            ControlSystem::Kvelocity = doc[6] / 100.0;
-            ControlSystem::Kposition = doc[7] / 100.0;
-            ControlSystem::Kdistance = doc[8] / 100.0;
-            ControlSystem::INTEGRAL_LIMIT = doc[9];
+            Serial.println("Constants Changed");
+            ControlSystem::positionKp = static_cast<double>(doc["1"]) / 100.0;
+            ControlSystem::positionKi = static_cast<double>(doc["2"]) / 100.0;
+            ControlSystem::positionKd = static_cast<double>(doc["3"]) / 100.0;
+            ControlSystem::distanceKp = static_cast<double>(doc["4"]) / 100.0;
+            ControlSystem::distanceKd = static_cast<double>(doc["5"]) / 100.0;
+            ControlSystem::Kvelocity = static_cast<double>(doc["6"]) / 100.0;
+            ControlSystem::Kposition = static_cast<double>(doc["7"]) / 100.0;
+            ControlSystem::Kdistance = static_cast<double>(doc["8"]) / 100.0;
+            ControlSystem::INTEGRAL_LIMIT = static_cast<int>(doc["9"]);
             break;
-        case 3: // Joystick
-            int angle = doc[1];
+        case 3: {// Joystick
+            Serial.println("Joystick moved");
+            mode = 4;
+            int angle = 90 - doc["1"];
             if (angle > 180) {
                 angle = angle - 360;
             } else if (angle < -180) {
                 angle = angle + 360;
             }
             desiredDirection = angle;
-            desiredVelocity = doc[2];
+            desiredVelocity = doc["2"];
             break;
-        case 4: // Reset direction
+        }
+        case 4: {
+            Serial.println("Set new North");
+            // Reset direction
             direction = 0;
             break;
-        default:
-            break;
+        } 
+
+        default: {break;}
     }
 
 }
