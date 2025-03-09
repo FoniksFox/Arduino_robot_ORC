@@ -67,6 +67,13 @@ void ControlSystem::init()
 
 std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity) {
     std::vector<int> controlSignal = {0, 0};
+
+    Serial.print("Inputs - V1: "); Serial.print(velocity1);
+    Serial.print(" V2: "); Serial.print(velocity2);
+    Serial.print(" Pos: "); Serial.print(position);
+    Serial.print(" Dist: "); Serial.print(distance);
+    Serial.print(" DesV: "); Serial.println(desiredVelocity);
+
     if (lastTime == 0)
         lastTime = millis();
     double deltaT = millis() - lastTime + 1e-6;
@@ -74,19 +81,23 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     // Calculate position errors
     if (position == -1000)
     { // No line detected
+        Serial.println("Debug: No line - Turning");
         if (positionError < 0)
         {
             // Turn left
+            Serial.println("Debug: Turning Left");
             return {230, -230};
         }
         else
         {
             // Turn right
+            Serial.println("Debug: Turning Right");
             return {-230, 230};
         }
     }
     else if (position == 1000)
     { // Intersection detected
+        Serial.println("Debug: Intersection Detected");
         positionError = 0;
     }
     else
@@ -132,6 +143,9 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     } else {
         controlSignal = {int(desiredVelocity), int(desiredVelocity)};
     }
+
+    Serial.print("Final Signals (L,R): "); 
+    Serial.print(controlSignal[0]); Serial.print(","); Serial.println(controlSignal[1]);
 
     lastTime = millis();
     return controlSignal;

@@ -1,21 +1,23 @@
 #include "Bluetooth.h"
 #include <Arduino.h>
 
-Bluetooth::Bluetooth(const char* name) :
-    deviceName(name),
-    SERVICE_UUID ("d7aa9e26-3527-416a-aaee-c7b1454642dd"),
+Bluetooth::Bluetooth(const char* deviceName) :
+    deviceName(deviceName),
+    SERVICE_UUID("d7aa9e26-3527-416a-aaee-c7b1454642dd"),
     CHARACTERISTIC_UUID("beb5483e-36e1-4688-b7f5-ea07361b26a8"),
+    CONSOLE_SERVICE_UUID("d7aa9e27-3527-416a-aaee-c7b1454642dd"),
+    CONSOLE_TX_CHAR_UUID("beb5483e-36e1-4688-b7f5-ea07361b26a9"),
+    CONSOLE_RX_CHAR_UUID("beb5483e-36e1-4688-b7f5-ea07361b26aa"),
     deviceConnected(false),
     oldDeviceConnected(false),
     lastUpdateTime(0),
     connectionRetryDelay(500),
     reconnectionAttempts(0),
-    commandCallback(nullptr) {
+    pConsoleTxChar(nullptr),
+    pConsoleRxChar(nullptr) {
 }
 
-
-bool Bluetooth::begin(){
-
+bool Bluetooth::begin() {
     // initialize
     NimBLEDevice::init(deviceName);
 
@@ -34,7 +36,6 @@ bool Bluetooth::begin(){
         return false;
     }
 
-    // Create characteristic
     pCharacteristic = pService->createCharacteristic(
         CHARACTERISTIC_UUID,
         NIMBLE_PROPERTY::READ |
@@ -49,16 +50,48 @@ bool Bluetooth::begin(){
    
     pCharacteristic->setCallbacks(this);
     pService->start();
+    
+    // Add console service
+    NimBLEService *pConsoleService = pServer->createService(CONSOLE_SERVICE_UUID);
+    if (!pConsoleService) {
+        Serial.println("Failed to create BLE console service");
+        return false;
+    }
+    
+    // Create console TX characteristic (robot -> app)
+    pConsoleTxChar = pConsoleService->createCharacteristic(
+        CONSOLE_TX_CHAR_UUID,
+        NIMBLE_PROPERTY::READ |
+        NIMBLE_PROPERTY::NOTIFY
+    );
+    
+    if (!pConsoleTxChar) {
+        Serial.println("Failed to create BLE console TX characteristic");
+        return false;
+    }
+    
+    // Create console RX characteristic (app -> robot)
+    pConsoleRxChar = pConsoleService->createCharacteristic(
+        CONSOLE_RX_CHAR_UUID,
+        NIMBLE_PROPERTY::WRITE
+    );
+    
+    if (!pConsoleRxChar) {
+        Serial.println("Failed to create BLE console RX characteristic");
+        return false;
+    }
+    
+    pConsoleRxChar->setCallbacks(this);
+    pConsoleService->start();
    
     // Configure advertising
     NimBLEAdvertising* pAdvertising = NimBLEDevice::getAdvertising();
     pAdvertising->addServiceUUID(SERVICE_UUID);
+    pAdvertising->addServiceUUID(CONSOLE_SERVICE_UUID);
     pAdvertising->setScanResponse(true);
     pAdvertising->setName(deviceName);
     pAdvertising->setMinInterval(0x20);  // 0x20 * 0.625ms = 20ms
     pAdvertising->setMaxInterval(0x40); // 0x40 * 0.625ms = 40ms
-   
-   
    
     // Start advertising
     if (!pAdvertising->start()) {
@@ -69,7 +102,6 @@ bool Bluetooth::begin(){
     Serial.print("BLE server ready: ");
     Serial.println(deviceName.c_str());
     return true;
-
 }
 
 bool Bluetooth::waitForConnection(unsigned long timeout_ms) {
@@ -90,11 +122,9 @@ bool Bluetooth::waitForConnection(unsigned long timeout_ms) {
     return true;
 }
 
-
 void Bluetooth::setCommandCallback(CommandCallback callback) {
     commandCallback = callback;
 }
-
 
 void Bluetooth::sendResponse(const char* status, const char* message) {
     if (!deviceConnected) return;
@@ -112,7 +142,6 @@ void Bluetooth::sendResponse(const char* status, const char* message) {
     pCharacteristic->notify();
 }
 
-
 void Bluetooth::onConnect(NimBLEServer* pServer) {
     deviceConnected = true;
     reconnectionAttempts = 0;
@@ -120,12 +149,10 @@ void Bluetooth::onConnect(NimBLEServer* pServer) {
     Serial.println("Device connected");
 }
 
-
 void Bluetooth::onDisconnect(NimBLEServer* pServer) {
     deviceConnected = false;
     Serial.println("Device disconnected");
 }
-
 
 void Bluetooth::restartAdvertising() {
     reconnectionAttempts++;
@@ -140,7 +167,6 @@ void Bluetooth::restartAdvertising() {
     Serial.println("ms");
 }
 
-
 void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
     std::string value = pCharacteristic->getValue();
    
@@ -149,26 +175,30 @@ void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
         sendResponse("error", "Empty command");
         return;
     }
-   
-    //Serial.print("Queued command: ");
-    //Serial.println(value.c_str());
-
     
-    commandQueue.push(value.c_str());
+    // Check if this is a console command
+    if (pCharacteristic->getUUID().equals(CONSOLE_RX_CHAR_UUID)) {
+        Serial.print("Received console command: ");
+        Serial.println(value.c_str());
+        processConsoleCommand(value);
+    } else {
+        // Regular command processing
+        //Serial.print("Queued command: ");
+        //Serial.println(value.c_str());
+        commandQueue.push(value.c_str());
+    }
     if (commandQueue.size() > 5) {
         commandQueue.pop();
     }
 }
-
 
 void Bluetooth::processQueue() {
     if (!commandQueue.empty()) {
         String commandJson = commandQueue.front();
         commandQueue.pop(); 
 
-        DynamicJsonDocument doc(512);
+        StaticJsonDocument<200> doc;
         DeserializationError error = deserializeJson(doc, commandJson);
-
 
         if (error) {
             Serial.print("JSON parse error: ");
@@ -176,5 +206,63 @@ void Bluetooth::processQueue() {
             return;
         }
         processOrder(doc);
+
+    
     }
+}
+
+void Bluetooth::processConsoleCommand(const std::string& command) {
+    sendConsoleMessage(("> " + command).c_str(), "command");
+    
+    if (command == "help") {
+        sendConsoleMessage("Available commands:", "info");
+        sendConsoleMessage("  help - Show this help message", "info");
+        sendConsoleMessage("  status - Show robot status", "info");
+        sendConsoleMessage("  reset - Reset the robot", "info");
+    } else if (command == "status") { // test command
+        sendConsoleMessage("Robot status:", "Yeh, its aight");
+    } else if (command == "reset") {
+        sendConsoleMessage("Resetting robot...", "warning");
+        // Implement reset (prob not needed, but if i have time)
+        delay(1000);
+        sendConsoleMessage("Robot reset complete", "info");
+    } else {
+        StaticJsonDocument<200> doc;
+        DeserializationError error = deserializeJson(doc, command);
+        if (!error) {
+            processOrder(doc);
+        } else {
+            // Not a json
+            sendConsoleMessage("Unknown command or invalid format", "error");
+        }
+    }
+}
+
+void Bluetooth::sendConsoleMessage(const char* message, const char* level) {
+    if (!deviceConnected || !pConsoleTxChar) return;
+    
+    StaticJsonDocument<256> consoleMsg;
+    consoleMsg["message"] = message;
+    consoleMsg["level"] = level;  
+    
+    String jsonString;
+    serializeJson(consoleMsg, jsonString);
+    consoleQueue.push(jsonString.c_str());
+    
+    // Limit queue size
+    while (consoleQueue.size() > MAX_CONSOLE_QUEUE_SIZE) {
+        consoleQueue.pop();
+    }
+
+    if (!consoleQueue.empty()) {
+        std::string msg = consoleQueue.front();
+        consoleQueue.pop();
+        
+        pConsoleTxChar->setValue(msg);
+        pConsoleTxChar->notify();
+    }
+}
+
+void consoleLog(const char* message) {
+    Serial.println(message);  
 }

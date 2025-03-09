@@ -62,14 +62,19 @@ void Vehicle::init() {
 void Vehicle::update() {
     velocity = (motor1.getSpeed() + motor2.getSpeed()) / 2;
     direction = direction + (motor1.getSpeed() - motor2.getSpeed()) / 2;
+    velocity = (motor1.getSpeed() + motor2.getSpeed()) / 2;
+    direction = direction + (motor1.getSpeed() - motor2.getSpeed()) / 2;
     if (direction > 180) {
         direction = direction - 360;
     } else if (direction < -180) {
         direction = direction + 360;
     }
     std::vector<int> controlState = {0, 0};
-    //Serial.println("MODE" + mode);
-    //mode = 4;
+
+    Serial.println("Direction : " + String(direction));
+    Serial.println("Velocity : " + String(velocity));
+
+
     switch (mode) {
         case 0: // Wait still
             Serial.println("Nothing");
