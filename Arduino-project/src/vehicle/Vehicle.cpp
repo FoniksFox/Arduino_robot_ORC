@@ -6,7 +6,7 @@ int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
 
 Vehicle::Vehicle() : 
     distanceSensor(13, 18), 
-    motorController(14, 19, 23, 22, 12, 21), 
+    motorController(19, 14, 12, 21, 23, 22), 
     motor1(motorController, 1), 
     motor2(motorController, 2), 
     lineSensor(27, sensors), 
@@ -140,14 +140,15 @@ void Vehicle::update() {
 
         case 4: // Football / Manual control
             Serial.println("Manual control");
-            controlState = ControlSystem::update(motor1.getSpeed(), motor2.getSpeed(), desiredDirection - direction, 1000, desiredVelocity);
+            Serial.println("Desired Direction: " + String(desiredDirection) + ", Desired Velocity: " + String(desiredVelocity));
+            controlState = ControlSystem::update(motor1.getSpeed(), motor2.getSpeed(), desiredDirection, 1000, desiredVelocity);
             break;
 
         default:
             break;
     }
 
-
+    Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
 
@@ -188,14 +189,14 @@ VelocitySensor Vehicle::getVelocitySensor2() {
 void Vehicle::processOrder(StaticJsonDocument<200> doc) {
     // Example orders
     int command = doc["0"].as<int>();
-    Serial.println(command);
+    //Serial.println(command);
     switch (command) {
         case 0: // Stop vehicle
-            Serial.println("Vehicle stopped...");
+            //Serial.println("Vehicle stopped...");
             mode = 0;
             break;
         case 1: // Set mode
-            Serial.println("Changing Mode...");
+            //Serial.println("Changing Mode...");
             if (doc["1"] == 3) {
                 mode = 3;
                 repetition = 0;
@@ -210,7 +211,7 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             }
             break;
         case 2: // Set constants
-            Serial.println("Constants Changed");
+            //Serial.println("Constants Changed");
             ControlSystem::positionKp = static_cast<double>(doc["1"]) / 100.0;
             ControlSystem::positionKi = static_cast<double>(doc["2"]) / 100.0;
             ControlSystem::positionKd = static_cast<double>(doc["3"]) / 100.0;
@@ -222,20 +223,21 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             ControlSystem::INTEGRAL_LIMIT = static_cast<int>(doc["9"]);
             break;
         case 3: {// Joystick
-            Serial.println("Joystick moved");
+            //Serial.println("Joystick moved");
             mode = 4;
-            int angle = 90 - doc["1"];
+            int angle = 90 - int(doc["1"]);
             if (angle > 180) {
                 angle = angle - 360;
             } else if (angle < -180) {
                 angle = angle + 360;
             }
             desiredDirection = angle;
-            desiredVelocity = doc["2"];
+            desiredVelocity = int(doc["2"]);
+            //Serial.println("Direction: " + String(desiredDirection) + ", Velocity: " + String(desiredVelocity));
             break;
         }
         case 4: {
-            Serial.println("Set new North");
+            //Serial.println("Set new North");
             // Reset direction
             direction = 0;
             break;

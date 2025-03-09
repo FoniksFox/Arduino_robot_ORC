@@ -150,11 +150,14 @@ void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
         return;
     }
    
-    Serial.print("Queued command: ");
-    Serial.println(value.c_str());
+    //Serial.print("Queued command: ");
+    //Serial.println(value.c_str());
 
-
+    
     commandQueue.push(value.c_str());
+    if (commandQueue.size() > 5) {
+        commandQueue.pop();
+    }
 }
 
 
@@ -173,7 +176,5 @@ void Bluetooth::processQueue() {
             return;
         }
         processOrder(doc);
-
-        delay(10);  
     }
 }

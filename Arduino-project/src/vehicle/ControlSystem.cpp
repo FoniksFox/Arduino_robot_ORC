@@ -65,15 +65,14 @@ void ControlSystem::init()
     lastTime = millis();
 }
 
-std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity)
-{
+std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity) {
     std::vector<int> controlSignal = {0, 0};
     if (lastTime == 0)
         lastTime = millis();
     double deltaT = millis() - lastTime + 1e-6;
 
     // Calculate position errors
-    if (position == -10)
+    if (position == -1000)
     { // No line detected
         if (positionError < 0)
         {
@@ -86,7 +85,7 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
             return {-230, 230};
         }
     }
-    else if (position == 10)
+    else if (position == 1000)
     { // Intersection detected
         positionError = 0;
     }
@@ -105,7 +104,9 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
 
         positionError = error;
     }
+    Serial.println("Position: " + String(position) + ", Error: " + String(positionError) + ", Integral: " + String(positionIntegral) + ", Derivative: " + String(positionDerivative));
     double positionControl = positionProportionalError + positionIntegral + positionDerivative;
+    Serial.println("Position Control: " + String(positionControl));
 
     // Take distante into account
     double distanceControl = 0;
@@ -118,13 +119,18 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     // Calculate control signal
     controlSignal[0] = int(velocity1 * Kvelocity + positionControl * Kposition - distanceControl * Kdistance);
     controlSignal[1] = int(velocity2 * Kvelocity - positionControl * Kposition - distanceControl * Kdistance);
+    Serial.println("Control Signal: " + String(controlSignal[0]) + ", " + String(controlSignal[1]));
 
     // Normalize control signal, proportionally to desired velocity
     double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
-    if (maxControlSignal > desiredVelocity)
-    {
+    Serial.println("Max Control Signal: " + String(maxControlSignal));
+    if (controlSignal[0] == maxControlSignal) controlSignal[1] += maxControlSignal / 5;
+    if (controlSignal[1] == maxControlSignal) controlSignal[0] += maxControlSignal / 5;
+    if (maxControlSignal != 0) {
         controlSignal[0] = controlSignal[0] * desiredVelocity / maxControlSignal;
         controlSignal[1] = controlSignal[1] * desiredVelocity / maxControlSignal;
+    } else {
+        controlSignal = {int(desiredVelocity), int(desiredVelocity)};
     }
 
     lastTime = millis();
