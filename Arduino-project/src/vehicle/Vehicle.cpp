@@ -160,7 +160,7 @@ void Vehicle::update() {
     processQueue();
     // Later add logging
     std::string log = "Velocity: " + std::to_string(velocity) + ", Direction: " + std::to_string(direction) + ", Mode: " + std::to_string(mode);
-    sendResponse("ok", log.c_str());
+    sendConsoleMessage(log.c_str(), "info");
 }
 
 DistanceSensor Vehicle::getDistanceSensor() {
