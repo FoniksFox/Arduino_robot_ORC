@@ -60,16 +60,19 @@ void Vehicle::init() {
 }
 
 void Vehicle::update() {
-    velocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
-    direction = direction + (velocitySensor1.getVelocity() - velocitySensor2.getVelocity()) / 2;
+    velocity = (motor1.getSpeed() + motor2.getSpeed()) / 2;
+    direction = direction + (motor1.getSpeed() - motor2.getSpeed()) / 2;
     if (direction > 180) {
         direction = direction - 360;
     } else if (direction < -180) {
         direction = direction + 360;
     }
     std::vector<int> controlState = {0, 0};
-    //Serial.println("MODE" + mode);
-    //mode = 4;
+
+    Serial.println("Direction : " + String(direction));
+    Serial.println("Velocity : " + String(velocity));
+
+
     switch (mode) {
         case 0: // Wait still
             Serial.println("Nothing");
@@ -140,13 +143,15 @@ void Vehicle::update() {
 
         case 4: // Football / Manual control
             Serial.println("Manual control");
-            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), desiredDirection - direction, 1000, desiredVelocity);
+            controlState = ControlSystem::update(motor1.getSpeed(), motor2.getSpeed(), desiredDirection - direction, 1000, desiredVelocity);
             break;
 
         default:
             break;
     }
 
+    Serial.println(controlState[0]);
+    Serial.println(controlState[1]);
 
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
@@ -224,7 +229,7 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
         case 3: {// Joystick
             Serial.println("Joystick moved");
             mode = 4;
-            int angle = 90 - doc["1"];
+            int angle = 90 - int(doc["1"]);
             if (angle > 180) {
                 angle = angle - 360;
             } else if (angle < -180) {

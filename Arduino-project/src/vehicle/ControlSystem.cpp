@@ -68,6 +68,13 @@ void ControlSystem::init()
 std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity)
 {
     std::vector<int> controlSignal = {0, 0};
+
+    Serial.print("Inputs - V1: "); Serial.print(velocity1);
+    Serial.print(" V2: "); Serial.print(velocity2);
+    Serial.print(" Pos: "); Serial.print(position);
+    Serial.print(" Dist: "); Serial.print(distance);
+    Serial.print(" DesV: "); Serial.println(desiredVelocity);
+
     if (lastTime == 0)
         lastTime = millis();
     double deltaT = millis() - lastTime + 1e-6;
@@ -75,19 +82,23 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     // Calculate position errors
     if (position == -10)
     { // No line detected
+        Serial.println("Debug: No line - Turning");
         if (positionError < 0)
         {
             // Turn left
+            Serial.println("Debug: Turning Left");
             return {230, -230};
         }
         else
         {
             // Turn right
+            Serial.println("Debug: Turning Right");
             return {-230, 230};
         }
     }
     else if (position == 10)
     { // Intersection detected
+        Serial.println("Debug: Intersection Detected");
         positionError = 0;
     }
     else
@@ -119,13 +130,22 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     controlSignal[0] = int(velocity1 * Kvelocity + positionControl * Kposition - distanceControl * Kdistance);
     controlSignal[1] = int(velocity2 * Kvelocity - positionControl * Kposition - distanceControl * Kdistance);
 
+    Serial.print("Position Control: "); Serial.print(positionControl);
+    Serial.print(" Distance Control: "); Serial.print(distanceControl);
+    Serial.print(" Raw Signals (L,R): "); 
+    Serial.print(controlSignal[0]); Serial.print(","); Serial.println(controlSignal[1]);
+
     // Normalize control signal, proportionally to desired velocity
     double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
     if (maxControlSignal > desiredVelocity)
     {
         controlSignal[0] = controlSignal[0] * desiredVelocity / maxControlSignal;
         controlSignal[1] = controlSignal[1] * desiredVelocity / maxControlSignal;
+        Serial.println("Debug: Signals Normalized");
     }
+
+    Serial.print("Final Signals (L,R): "); 
+    Serial.print(controlSignal[0]); Serial.print(","); Serial.println(controlSignal[1]);
 
     lastTime = millis();
     return controlSignal;
