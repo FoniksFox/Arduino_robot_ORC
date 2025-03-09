@@ -16,5 +16,5 @@ void loop() {
   // put your main code here, to run repeatedly:
   Serial.println("Updating vehicle");
   vehicle.update();
-  delay(1000);
+  delay(100);
 }
