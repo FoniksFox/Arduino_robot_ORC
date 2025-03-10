@@ -157,6 +157,7 @@ void Vehicle::update() {
     motor2.setSpeed(controlState[1]);
 
     processQueue();
+    processBatteryReadings();
     // Later add logging
     std::string log = "Velocity: " + std::to_string(velocity) + ", Direction: " + std::to_string(direction) + ", Mode: " + std::to_string(mode);
     sendResponse("ok", log.c_str());

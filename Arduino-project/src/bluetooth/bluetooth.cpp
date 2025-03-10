@@ -1,5 +1,8 @@
 #include "Bluetooth.h"
 #include <Arduino.h>
+#define BATTERY_PIN 34  // Analog pin to read battery voltage
+#define BATTERY_MIN 3200  // Minimum battery voltage in mV (empty)
+#define BATTERY_MAX 4200  // Maximum battery voltage in mV (fully charged)
 
 Bluetooth::Bluetooth(const char* deviceName) :
     deviceName(deviceName),
@@ -244,22 +247,89 @@ void Bluetooth::sendConsoleMessage(const char* message, const char* level) {
     
     String jsonString;
     serializeJson(consoleMsg, jsonString);
+    
+    // Add message to queue
     consoleQueue.push(jsonString.c_str());
     
     // Limit queue size
     while (consoleQueue.size() > MAX_CONSOLE_QUEUE_SIZE) {
         consoleQueue.pop();
     }
+    processConsoleQueue();
+}
 
-    if (!consoleQueue.empty()) {
+void Bluetooth::processConsoleQueue() {
+    while (!consoleQueue.empty()) {
         std::string msg = consoleQueue.front();
         consoleQueue.pop();
         
         pConsoleTxChar->setValue(msg);
         pConsoleTxChar->notify();
+        delay(20);
     }
 }
 
 void consoleLog(const char* message) {
     Serial.println(message);  
+}
+
+void Bluetooth::sendBatteryLevel(int level) {
+    if (!deviceConnected || !pCharacteristic) return;
+    
+    StaticJsonDocument<64> batteryData;
+    batteryData["type"] = "battery";
+    batteryData["level"] = level;
+    
+    String jsonString;
+    serializeJson(batteryData, jsonString);
+    
+    pCharacteristic->setValue(jsonString.c_str());
+    pCharacteristic->notify();
+    
+    // Also send to console for debugging
+    char buffer[32];
+    snprintf(buffer, sizeof(buffer), "Battery level: %d%%", level);
+    sendConsoleMessage(buffer, "info");
+}
+
+void Bluetooth::processBatteryReadings() {
+    // Check if it's time to update battery reading
+    unsigned long currentTime = millis();
+    if (currentTime - lastBatteryUpdate < BATTERY_UPDATE_INTERVAL) {
+        return;
+    }
+    
+    lastBatteryUpdate = currentTime;
+    
+    // Read battery voltage
+    int rawValue = analogRead(BATTERY_PIN);
+    
+    // Convert to millivolts - adjust for your specific ADC reference and voltage divider if used
+    // ESP32 ADC is 12-bit (0-4095) and default reference is 3.3V
+    // If you have a voltage divider, adjust the calculation accordingly
+    float voltage = rawValue * 3.3 / 4095.0;
+    
+    // If you're using a voltage divider (e.g., 100K and 100K resistors in series)
+    // voltage = voltage * 2.0;  // Multiply by the divider ratio
+    
+    // Convert voltage to percentage
+    int batteryMv = int(voltage * 1000.0);  // Convert to millivolts
+    int batteryPercentage = map(batteryMv, BATTERY_MIN, BATTERY_MAX, 0, 100);
+    
+    // Constrain to valid range
+    batteryPercentage = constrain(batteryPercentage, 0, 100);
+    
+    // Send the battery level
+    if (deviceConnected) {
+        sendBatteryLevel(batteryPercentage);
+    }
+    
+    // Debug output
+    Serial.print("Battery raw: ");
+    Serial.print(rawValue);
+    Serial.print(", Voltage: ");
+    Serial.print(voltage);
+    Serial.print("V, Percentage: ");
+    Serial.print(batteryPercentage);
+    Serial.println("%");
 }
