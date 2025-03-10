@@ -300,20 +300,9 @@ void Bluetooth::processBatteryReadings() {
     }
     
     lastBatteryUpdate = currentTime;
-    
-    // Read battery voltage
     int rawValue = analogRead(BATTERY_PIN);
-    
-    // Convert to millivolts - adjust for your specific ADC reference and voltage divider if used
-    // ESP32 ADC is 12-bit (0-4095) and default reference is 3.3V
-    // If you have a voltage divider, adjust the calculation accordingly
     float voltage = rawValue * 3.3 / 4095.0;
-    
-    // If you're using a voltage divider (e.g., 100K and 100K resistors in series)
-    // voltage = voltage * 2.0;  // Multiply by the divider ratio
-    
-    // Convert voltage to percentage
-    int batteryMv = int(voltage * 1000.0);  // Convert to millivolts
+    int batteryMv = int(voltage * 1000.0); 
     int batteryPercentage = map(batteryMv, BATTERY_MIN, BATTERY_MAX, 0, 100);
     
     // Constrain to valid range
