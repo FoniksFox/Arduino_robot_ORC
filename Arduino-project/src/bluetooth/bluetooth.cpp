@@ -213,17 +213,15 @@ void Bluetooth::processQueue() {
 
 void Bluetooth::processConsoleCommand(const std::string& command) {
     sendConsoleMessage(("> " + command).c_str(), "command");
-    
     if (command == "help") {
         sendConsoleMessage("Available commands:", "info");
         sendConsoleMessage("  help - Show this help message", "info");
         sendConsoleMessage("  status - Show robot status", "info");
         sendConsoleMessage("  reset - Reset the robot", "info");
-    } else if (command == "status") { // test command
-        sendConsoleMessage("Robot status:", "Yeh, its aight");
+    } else if (command == "status") {
+        sendConsoleMessage("Robot status:", "info");
     } else if (command == "reset") {
         sendConsoleMessage("Resetting robot...", "warning");
-        // Implement reset (prob not needed, but if i have time)
         delay(1000);
         sendConsoleMessage("Robot reset complete", "info");
     } else {
@@ -232,7 +230,6 @@ void Bluetooth::processConsoleCommand(const std::string& command) {
         if (!error) {
             processOrder(doc);
         } else {
-            // Not a json
             sendConsoleMessage("Unknown command or invalid format", "error");
         }
     }
@@ -255,9 +252,9 @@ void Bluetooth::sendConsoleMessage(const char* message, const char* level) {
     while (consoleQueue.size() > MAX_CONSOLE_QUEUE_SIZE) {
         consoleQueue.pop();
     }
-    processConsoleQueue();
 }
 
+// Add this new method to your class
 void Bluetooth::processConsoleQueue() {
     while (!consoleQueue.empty()) {
         std::string msg = consoleQueue.front();
@@ -265,12 +262,8 @@ void Bluetooth::processConsoleQueue() {
         
         pConsoleTxChar->setValue(msg);
         pConsoleTxChar->notify();
-        delay(20);
+        delay(20); 
     }
-}
-
-void consoleLog(const char* message) {
-    Serial.println(message);  
 }
 
 void Bluetooth::sendBatteryLevel(int level) {
@@ -286,14 +279,12 @@ void Bluetooth::sendBatteryLevel(int level) {
     pCharacteristic->setValue(jsonString.c_str());
     pCharacteristic->notify();
     
-    // Also send to console for debugging
     char buffer[32];
     snprintf(buffer, sizeof(buffer), "Battery level: %d%%", level);
     sendConsoleMessage(buffer, "info");
 }
 
 void Bluetooth::processBatteryReadings() {
-    // Check if it's time to update battery reading
     unsigned long currentTime = millis();
     if (currentTime - lastBatteryUpdate < BATTERY_UPDATE_INTERVAL) {
         return;

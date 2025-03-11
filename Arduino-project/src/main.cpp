@@ -20,5 +20,20 @@ void loop() {
   // put your main code here, to run repeatedly:
   Serial.println("Updating vehicle");
   vehicle.update();
+  
+  // Direct battery reading for debugging
+  int rawValue = analogRead(BATTERY_PIN);
+  float voltage = rawValue * 3.3 / 4095.0;
+  int batteryMv = int(voltage * 1000.0); 
+  int batteryPercentage = map(batteryMv, BATTERY_MIN, BATTERY_MAX, 0, 100);
+  batteryPercentage = constrain(batteryPercentage, 0, 100);
+  
+  Serial.print("Direct battery reading - Raw: ");
+  Serial.print(rawValue);
+  Serial.print(", Voltage: ");
+  Serial.print(voltage);
+  Serial.print("V, Percentage: ");
+  Serial.print(batteryPercentage);
+  Serial.println("%");
   delay(100);
 }
