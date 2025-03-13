@@ -294,25 +294,13 @@ void Bluetooth::processBatteryReadings() {
     }
     
     lastBatteryUpdate = currentTime;
-    int rawValue = analogRead(BATTERY_PIN);
-    float voltage = rawValue * 3.3 / 4095.0;
-    int batteryMv = int(voltage * 1000.0); 
-    int batteryPercentage = map(batteryMv, BATTERY_MIN, BATTERY_MAX, 0, 100);
-    
-    // Constrain to valid range
-    batteryPercentage = constrain(batteryPercentage, 0, 100);
+    int battery = analogRead(4) / 42;
     
     // Send the battery level
     if (deviceConnected) {
-        sendBatteryLevel(batteryPercentage);
+        sendBatteryLevel(battery);
     }
     
     // Debug output
-    Serial.print("Battery raw: ");
-    Serial.print(rawValue);
-    Serial.print(", Voltage: ");
-    Serial.print(voltage);
-    Serial.print("V, Percentage: ");
-    Serial.print(batteryPercentage);
-    Serial.println("%");
+    Serial.println("Batería:" + String(battery));
 }
