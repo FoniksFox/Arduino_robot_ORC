@@ -188,6 +188,24 @@ void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
         // Regular command processing
         //Serial.print("Queued command: ");
         //Serial.println(value.c_str());
+        /*
+        StaticJsonDocument<200> aux;
+        DeserializationError error = deserializeJson(aux, value.c_str());
+        if(aux["0"] == 3) {
+            String commandJson = commandQueue.front();
+            StaticJsonDocument<200> doc;
+            DeserializationError error = deserializeJson(doc, commandJson);
+            if (error) return;
+            int t = doc["0"].as<int>();
+            while (t == 3) {
+                commandQueue.pop();
+                commandJson = commandQueue.front();
+                error = deserializeJson(doc, commandJson);
+                if (error) return;
+                t = doc["0"].as<int>();
+            }
+        }
+        */
         commandQueue.push(value.c_str());
     }
     if (commandQueue.size() > 5) {
