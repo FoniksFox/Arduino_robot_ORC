@@ -44,6 +44,11 @@ class Bluetooth : public NimBLEServerCallbacks, public NimBLECharacteristicCallb
         virtual void processOrder(StaticJsonDocument<200> doc) = 0;
 
         void processQueue();
+        void processConsoleQueue();
+        void sendBatteryLevel(int level);
+        void processBatteryReadings();
+        unsigned long lastBatteryUpdate;
+        const unsigned long BATTERY_UPDATE_INTERVAL = 5000;
 
         std::string deviceName;
 
