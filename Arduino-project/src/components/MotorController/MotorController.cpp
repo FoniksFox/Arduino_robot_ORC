@@ -35,6 +35,7 @@ int MotorController::getMotorSpeed(int motor) {
     } else if (motor == 2) {
         return speed2;
     }
+    return 0;
 }
 
 void MotorController::stopMotor(int motor) {

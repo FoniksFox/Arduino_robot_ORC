@@ -1,5 +1,6 @@
 #include "VelocitySensor.h"
 #include <Arduino.h>
+#include <cmath>
 
 VelocitySensor* instance = nullptr;
 
@@ -28,7 +29,7 @@ double VelocitySensor::getVelocity() {
 
 void VelocitySensor::updateVelocity() {
     unsigned long currentTime = millis();
-    unsigned long elapsedTime = currentTime - lastTime;
+    unsigned long elapsedTime = (currentTime - lastTime) / 1000; // Convert to seconds
 
     if (elapsedTime >= 100) { // Update every tenth of a second
         noInterrupts();
@@ -36,7 +37,7 @@ void VelocitySensor::updateVelocity() {
         pulseCount = 0; 
         interrupts();
 
-        velocity = (count * 60) / elapsedTime; // Calculate RPM (each pulse is a full rotation)
+        velocity = count / 25 * PI * 6.4 / elapsedTime; // Calculate cm/s
         lastTime = currentTime;
     }
 }

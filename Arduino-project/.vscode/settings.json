@@ -1,5 +1,8 @@
 {
     "files.associations": {
+        "*.cpp": "cpp",
+        "*.h": "cpp",
+        "iostream": "cpp",
         "vector": "cpp",
         "array": "cpp",
         "atomic": "cpp",
@@ -47,6 +50,7 @@
         "stdexcept": "cpp",
         "streambuf": "cpp",
         "cinttypes": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "list": "cpp"
     }
 }

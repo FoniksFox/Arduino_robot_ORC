@@ -8,6 +8,7 @@ class LineSensor : public ILineSensor {
         LineSensor(int IR, int sensors[8]);
         void init() override;
         double getLinePosition() override;
+        bool isLineDetected() override;
 
     private:
         int IR;
