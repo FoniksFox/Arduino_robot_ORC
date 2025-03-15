@@ -188,24 +188,7 @@ void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
         // Regular command processing
         //Serial.print("Queued command: ");
         //Serial.println(value.c_str());
-        /*
-        StaticJsonDocument<200> aux;
-        DeserializationError error = deserializeJson(aux, value.c_str());
-        if(aux["0"] == 3) {
-            String commandJson = commandQueue.front();
-            StaticJsonDocument<200> doc;
-            DeserializationError error = deserializeJson(doc, commandJson);
-            if (error) return;
-            int t = doc["0"].as<int>();
-            while (t == 3) {
-                commandQueue.pop();
-                commandJson = commandQueue.front();
-                error = deserializeJson(doc, commandJson);
-                if (error) return;
-                t = doc["0"].as<int>();
-            }
-        }
-        */
+        
         commandQueue.push(value.c_str());
     }
     if (commandQueue.size() > 5) {
@@ -216,7 +199,7 @@ void Bluetooth::onWrite(NimBLECharacteristic* pCharacteristic) {
 void Bluetooth::processQueue() {
     if (!commandQueue.empty()) {
         String commandJson = commandQueue.front();
-        commandQueue.pop(); 
+        commandQueue.pop();
 
         StaticJsonDocument<200> doc;
         DeserializationError error = deserializeJson(doc, commandJson);
@@ -225,6 +208,24 @@ void Bluetooth::processQueue() {
             Serial.print("JSON parse error: ");
             Serial.println(error.c_str());
             return;
+        }
+        int command = doc["0"].as<int>();
+        StaticJsonDocument<200> doc2;
+        while (commandQueue.size() > 0) {
+            String comamnd2Json = commandQueue.front();
+            DeserializationError error2 = deserializeJson(doc2, comamnd2Json);
+            if (error2) {
+                Serial.print("JSON parse error: ");
+                Serial.println(error2.c_str());
+                return;
+            }
+            int command2 = doc2["0"].as<int>();
+            if (command2 == command) {
+                commandQueue.pop();
+            } else {
+                doc = doc2;
+                break;
+            }
         }
         processOrder(doc);
 
