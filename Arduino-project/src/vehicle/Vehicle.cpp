@@ -11,7 +11,7 @@ Vehicle::Vehicle() :
     motor2(motorController, 2), 
     lineSensor(27, sensors), 
     velocitySensor1(16), 
-    velocitySensor2(17) 
+    velocitySensor2(17)
 {}
 
 void Vehicle::init() {
@@ -24,7 +24,7 @@ void Vehicle::init() {
     velocitySensor2.init();
     ControlSystem::init();
     
-    deviceName = "ESP32-Robot";
+    deviceName = "We're thinking";
     SERVICE_UUID = "d7aa9e26-3527-416a-aaee-c7b1454642dd";
     CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
     deviceConnected = false;
@@ -35,6 +35,7 @@ void Vehicle::init() {
     commandCallback = nullptr;
     begin();
 
+    lastUpdateTime = millis();
     velocity = 0;
     direction = 0;
     mode = 4;
@@ -60,10 +61,13 @@ void Vehicle::init() {
 }
 
 void Vehicle::update() {
-    velocity = (motor1.getSpeed() + motor2.getSpeed()) / 2;
-    direction = direction + (motor1.getSpeed() - motor2.getSpeed()) / 2;
-    velocity = (motor1.getSpeed() + motor2.getSpeed()) / 2;
-    direction = direction + (motor1.getSpeed() - motor2.getSpeed()) / 2;
+    long deltaT = millis() - lastUpdateTime;
+    if (deltaT < 100) {
+        return;
+    }
+    lastUpdateTime = millis();
+    velocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
+    direction = direction + (velocitySensor1.getVelocity() - velocitySensor2.getVelocity()) / (lastUpdateTime / 1000) / 21.5 * (180 / PI);
     if (direction > 180) {
         direction = direction - 360;
     } else if (direction < -180) {
@@ -74,7 +78,7 @@ void Vehicle::update() {
     Serial.println("Direction : " + String(direction));
     Serial.println("Velocity : " + String(velocity));
 
-
+    double directionError = 0;
     switch (mode) {
         case 0: // Wait still
             Serial.println("Nothing");
@@ -146,7 +150,13 @@ void Vehicle::update() {
         case 4: // Football / Manual control
             Serial.println("Manual control");
             Serial.println("Desired Direction: " + String(desiredDirection) + ", Desired Velocity: " + String(desiredVelocity));
-            controlState = ControlSystem::update(motor1.getSpeed(), motor2.getSpeed(), desiredDirection, 1000, desiredVelocity);
+            directionError = desiredDirection - direction;
+            if (directionError > 180) {
+                directionError = directionError - 360;
+            } else if (directionError < -180) {
+                directionError = directionError + 360;
+            }
+            controlState = ControlSystem::update(velocitySensor1.getVelocity() - motor1.getSpeed(), velocitySensor2.getVelocity() - motor2.getSpeed(), directionError, 1000, desiredVelocity);
             break;
 
         default:
