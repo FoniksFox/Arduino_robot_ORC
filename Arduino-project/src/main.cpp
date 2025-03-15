@@ -27,6 +27,6 @@ void loop() {
   Serial.println("Line: " + String(lineSensor.getLinePosition()));
   Serial.println("Velocity 1: " + String(velocitySensor1.getVelocity()));
   Serial.println("Velocity 2: " + String(velocitySensor2.getVelocity()));
-  Serial.println("Battery: " + String(analogRead(4)/35) + "%");
+  Serial.println("Battery: " + String(analogRead(4)/42) + "%");
   delay(1000);
 }
