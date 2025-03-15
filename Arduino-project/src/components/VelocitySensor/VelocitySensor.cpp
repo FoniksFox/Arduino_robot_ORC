@@ -2,10 +2,25 @@
 #include <Arduino.h>
 #include <cmath>
 
-VelocitySensor* instance = nullptr;
+#define MAX_SENSORS 10
+
+static VelocitySensor* instances[MAX_SENSORS] = {nullptr};
+
+void interrupt1() {
+    instances[0]->pulseCount++;
+}
+void interrupt2() {
+    instances[1]->pulseCount++;
+}
 
 VelocitySensor::VelocitySensor(int pin) : pin(pin) {
-    instance = this;
+    for (int i = 0; i < MAX_SENSORS; ++i) {
+        if (instances[i] == nullptr) {
+            instances[i] = this;
+            instanceIndex = i;
+            break;
+        }
+    }
 }
 
 void VelocitySensor::init() {
@@ -16,7 +31,11 @@ void VelocitySensor::init() {
         return;
     } else {
         Serial.println("Interrupt number: " + String(interruptNumber));
-        attachInterrupt(interruptNumber, handleInterrupt, RISING);
+        if (instanceIndex == 0) {
+            attachInterrupt(interruptNumber, interrupt1, RISING);
+        } else {
+            attachInterrupt(interruptNumber, interrupt2, RISING);
+        }
     }
     
     lastTime = millis();
@@ -29,22 +48,26 @@ double VelocitySensor::getVelocity() {
 
 void VelocitySensor::updateVelocity() {
     unsigned long currentTime = millis();
-    unsigned long elapsedTime = (currentTime - lastTime) / 1000; // Convert to seconds
+    unsigned long elapsedTime = (currentTime - lastTime);
 
     if (elapsedTime >= 100) { // Update every tenth of a second
+        Serial.println("Pulse count: " + String(pulseCount));
         noInterrupts();
         int count = pulseCount;
         pulseCount = 0; 
         interrupts();
 
-        velocity = count / 25 * PI * 6.4 / elapsedTime; // Calculate cm/s
+        Serial.println("Count: " + String(count));
+        velocity = double(count) / 25.0 * PI * 6.4 / (elapsedTime/1000.0); // Calculate cm/s
         lastTime = currentTime;
     }
 }
 
-void VelocitySensor::handleInterrupt() {
-    if (instance) {
-        Serial.println("Interrupt\n");
-        instance->pulseCount++;
+/*void VelocitySensor::handleInterrupt() {
+    for (int i = 0; i < MAX_SENSORS; ++i) {
+        if (instances[i] != nullptr && digitalRead(instances[i]->pin) == HIGH) {
+            instances[i]->pulseCount++;
+        }
     }
 }
+*/

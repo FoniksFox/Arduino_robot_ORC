@@ -9,14 +9,17 @@ class VelocitySensor : public IVelocitySensor {
         void init() override;
         double getVelocity() override;
 
+        volatile int pulseCount = 0;
+
     private:
         int pin;
-        volatile int pulseCount = 0;
+        int instanceIndex;
+        
         unsigned long lastTime;
-        int velocity = 0;
+        double velocity = 0;
 
         void updateVelocity();
-        static void handleInterrupt();
+        //handleInterrupt();
 };
 
 #endif // VELOCITYSENSOR_H
