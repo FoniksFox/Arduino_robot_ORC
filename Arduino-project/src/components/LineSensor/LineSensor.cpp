@@ -17,13 +17,20 @@ void LineSensor::init() {
 }
 
 double LineSensor::getLinePosition() { // Returns values between -45 and 45 degrees, 0 is the center, -1000 is no line
-    int position = 0;
+    double position = 0;
     int sum = 0;
 
     for (int i = 0; i < 8; i++) {
-        int value = digitalRead(sensors[i]);
+        int value = analogRead(sensors[i]);
+        //Serial.println("Sensor " + String(i) + ": " + String(value));
+        if (value > 1000) {
+            value = 0;
+        } else {
+            value = 1;
+        }
+        //Serial.println("Value: " + String(value));
         sum += value;
-        position += value * (i - 3.5);
+        position += value * (7 - i - 3.5);
     }
 
     if (sum == 0) {
@@ -32,12 +39,12 @@ double LineSensor::getLinePosition() { // Returns values between -45 and 45 degr
     else if (sum == 8) {
         return -1000; // No line
     }
-    return (position / sum)/3.5*45;
+    return (position / sum)/3.5*20;
 }
 
 bool LineSensor::isLineDetected() {
     for(int i = 0; i < 8; i++) {
-        if(digitalRead(sensors[i]) == 1) {
+        if(analogRead(sensors[i]) < 1000) {
             return true;
         }
     }
