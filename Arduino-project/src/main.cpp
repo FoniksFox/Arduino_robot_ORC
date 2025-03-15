@@ -26,7 +26,7 @@ void setup() {
   motor1.init();
   motor2.init();
   motor1.setSpeed(255);
-  motor2.setSpeed(255);
+  motor2.setSpeed(-100);
   pinMode(4, INPUT);
 }
 
