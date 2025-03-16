@@ -79,6 +79,8 @@ void Vehicle::update() {
     Serial.println("Velocity : " + String(velocity));
 
     double directionError = 0;
+    double motor1Error = 0;
+    double motor2Error = 0;
     switch (mode) {
         case 0: // Wait still
             Serial.println("Nothing");
@@ -156,7 +158,9 @@ void Vehicle::update() {
             } else if (directionError < -180) {
                 directionError = directionError + 360;
             }
-            controlState = ControlSystem::update(velocitySensor1.getVelocity() - motor1.getSpeed(), velocitySensor2.getVelocity() - motor2.getSpeed(), directionError, 1000, desiredVelocity);
+            motor1Error = motor1.getSpeed() > 0 ? velocitySensor1.getVelocity() - motor1.getSpeed()/255.0*50 : - velocitySensor1.getVelocity() - motor1.getSpeed()/255.0*50;
+            motor2Error = motor2.getSpeed() > 0 ? velocitySensor2.getVelocity() - motor2.getSpeed()/255.0*50 : - velocitySensor2.getVelocity() - motor2.getSpeed()/255.0*50;
+            controlState = ControlSystem::update(motor1Error, motor2Error, directionError, 1000, desiredVelocity);
             break;
 
         default:

@@ -51,14 +51,14 @@ void VelocitySensor::updateVelocity() {
     unsigned long elapsedTime = (currentTime - lastTime);
 
     if (elapsedTime >= 100) { // Update every tenth of a second
-        Serial.println("Pulse count: " + String(pulseCount));
+        //Serial.println("Pulse count: " + String(pulseCount));
         noInterrupts();
         int count = pulseCount;
         pulseCount = 0; 
         interrupts();
 
-        Serial.println("Count: " + String(count));
-        velocity = double(count) / 25.0 * PI * 6.4 / (elapsedTime/1000.0); // Calculate cm/s
+        //Serial.println("Count: " + String(count));
+        velocity = double(count) / 20.0 * PI * 6.4 / (elapsedTime/1000.0); // Calculate cm/s
         lastTime = currentTime;
     }
 }
