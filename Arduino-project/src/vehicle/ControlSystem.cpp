@@ -44,6 +44,18 @@ double ControlSystem::velocityDerivativeLimit;
 
 void ControlSystem::init()
 {
+    velocity1LastError = 0;
+    velocity2LastError = 0;
+    velocity1Integral = 0;
+    velocity2Integral = 0;
+    velocity1Derivative = 0;
+    velocity2Derivative = 0;
+
+    velocityKp = 0.5;
+    velocityKi = 0.1;
+    velocityKd = 0.1;
+    velocityIntegralLimit = 100;
+    velocityDerivativeLimit = 100;
     
     lastTime = millis();
 }
