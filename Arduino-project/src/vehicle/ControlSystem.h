@@ -10,8 +10,8 @@ class ControlSystem{
         
         static long long lastTime;
 
-        static const double WHEEL_RADIUS = 3.25;
-        static const double WHEEL_DISTANCE = 21.5;
+        static constexpr double WHEEL_RADIUS = 3.25;
+        static constexpr double WHEEL_DISTANCE = 21.5;
 
         static double velocity1LastError;
         static double velocity2LastError;

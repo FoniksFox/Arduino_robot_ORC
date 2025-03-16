@@ -21,6 +21,6 @@ void loop() {
   vehicle.update();
   pinMode(4, INPUT);
   Serial.println(analogRead(4));
-  if (lastTime + 100 > millis()) delay(lastTime + 100 - millis());
+  if (lastTime + 10 > millis()) delay(lastTime + 10 - millis());
   lastTime = millis();
 }

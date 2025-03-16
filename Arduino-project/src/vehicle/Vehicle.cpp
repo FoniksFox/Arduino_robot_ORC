@@ -62,12 +62,14 @@ void Vehicle::init() {
 
 void Vehicle::update() {
     long deltaT = millis() - lastUpdateTime;
-    if (deltaT < 100) {
+    if (deltaT < 10) {
         return;
     }
     lastUpdateTime = millis();
     velocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
-    direction = direction + (velocitySensor1.getVelocity() - velocitySensor2.getVelocity()) / (lastUpdateTime / 1000) / 21.5 * (180 / PI);
+    double v1 = motor1.getSpeed() > 0 ? velocitySensor1.getVelocity() : -velocitySensor1.getVelocity();
+    double v2 = motor2.getSpeed() > 0 ? velocitySensor2.getVelocity() : -velocitySensor2.getVelocity();
+    direction = direction + (v1 - v2) / 21.5 * (360.0 / (2 * PI)) * (deltaT / 1000.0);
     if (direction > 180) {
         direction = direction - 360;
     } else if (direction < -180) {
@@ -77,8 +79,13 @@ void Vehicle::update() {
 
     Serial.println("Direction : " + String(direction));
     Serial.println("Velocity : " + String(velocity));
-
-    double directionError = 0;
+    double angle = desiredDirection - direction;
+    if (angle > 180) {
+        angle = angle - 360;
+    } else if (angle < -180) {
+        angle = angle + 360;
+    }
+    double directionError = 7800000/(angle*angle*angle);
     double motor1Error = 0;
     double motor2Error = 0;
     switch (mode) {
@@ -88,7 +95,7 @@ void Vehicle::update() {
 
         case 1: // Velocity
             Serial.println("Velocity Challenge");
-            controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), 1000, 255);
+            //controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), 1000, 255);
             if (distanceSensor.getDistance() < 10) {
                 mode = 0;
             }
@@ -108,7 +115,7 @@ void Vehicle::update() {
                 motor2.setSpeed(controlState[1]);
                 delay(1000);
             } else {
-                controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance(), 255);
+                //controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance(), 255);
             }
             break;
 
@@ -158,9 +165,17 @@ void Vehicle::update() {
             } else if (directionError < -180) {
                 directionError = directionError + 360;
             }
-            motor1Error = motor1.getSpeed() > 0 ? velocitySensor1.getVelocity() - motor1.getSpeed()/255.0*50 : - velocitySensor1.getVelocity() - motor1.getSpeed()/255.0*50;
-            motor2Error = motor2.getSpeed() > 0 ? velocitySensor2.getVelocity() - motor2.getSpeed()/255.0*50 : - velocitySensor2.getVelocity() - motor2.getSpeed()/255.0*50;
-            controlState = ControlSystem::update(motor1Error, motor2Error, directionError, 1000, desiredVelocity);
+            if (motor1.getSpeed() < 0) {
+                motor1Error = -velocitySensor1.getVelocity();
+            } else {
+                motor1Error = velocitySensor1.getVelocity();
+            }
+            if (motor2.getSpeed() < 0) {
+                motor2Error = -velocitySensor2.getVelocity();
+            } else {
+                motor2Error = velocitySensor2.getVelocity();
+            }
+            controlState = ControlSystem::update(motor1Error, motor2Error, directionError, desiredVelocity);
             break;
 
         default:
@@ -174,7 +189,6 @@ void Vehicle::update() {
     processQueue();
     processConsoleQueue();
     processBatteryReadings();
-    // Later add logging
     std::string log = "Velocity: " + std::to_string(velocity) + ", Direction: " + std::to_string(direction) + ", Mode: " + std::to_string(mode);
     sendConsoleMessage(log.c_str());
 }
@@ -233,15 +247,15 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             break;
         case 2: // Set constants
             //Serial.println("Constants Changed");
-            ControlSystem::positionKp = static_cast<double>(doc["1"]) / 100.0;
-            ControlSystem::positionKi = static_cast<double>(doc["2"]) / 100.0;
-            ControlSystem::positionKd = static_cast<double>(doc["3"]) / 100.0;
-            ControlSystem::distanceKp = static_cast<double>(doc["4"]) / 100.0;
-            ControlSystem::distanceKd = static_cast<double>(doc["5"]) / 100.0;
-            ControlSystem::Kvelocity = static_cast<double>(doc["6"]) / 100.0;
-            ControlSystem::Kposition = static_cast<double>(doc["7"]) / 100.0;
-            ControlSystem::Kdistance = static_cast<double>(doc["8"]) / 100.0;
-            ControlSystem::INTEGRAL_LIMIT = static_cast<int>(doc["9"]);
+            ControlSystem::velocityKp = static_cast<double>(doc["1"]) / 10.0;
+            ControlSystem::velocityKi = static_cast<double>(doc["2"]) / 10.0;
+            ControlSystem::velocityKd = static_cast<double>(doc["3"]) / 10.0;
+            //ControlSystem::distanceKp = static_cast<double>(doc["4"]) / 100.0;
+            //ControlSystem::distanceKd = static_cast<double>(doc["5"]) / 100.0;
+            ControlSystem::velocityDerivativeLimit = static_cast<double>(doc["6"]);
+            //ControlSystem::Kposition = static_cast<double>(doc["7"]) / 100.0;
+            //ControlSystem::Kdistance = static_cast<double>(doc["8"]) / 100.0;
+            ControlSystem::velocityIntegralLimit = static_cast<int>(doc["9"]);
             break;
         case 3: {// Joystick
             //Serial.println("Joystick moved");
@@ -252,8 +266,9 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             } else if (angle < -180) {
                 angle = angle + 360;
             }
+            if (angle == 0) angle = 1;
             desiredDirection = angle;
-            desiredVelocity = int(doc["2"]);
+            desiredVelocity = int(doc["2"])/3;
             //Serial.println("Direction: " + String(desiredDirection) + ", Velocity: " + String(desiredVelocity));
             break;
         }
