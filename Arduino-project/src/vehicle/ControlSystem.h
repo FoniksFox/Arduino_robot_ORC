@@ -6,27 +6,25 @@
 class ControlSystem{
     public:
         static void init();
-        static std::vector<int> update(double velocity1, double velocity2, double position, double distance, double desiredVelocity);
+        static std::vector<int> update(double velocity1, double velocity2, double desiredRadius, double desiredVelocity);
         
-        static double positionError;
-        static double positionProportionalError;
-        static double positionIntegral;
-        static double positionDerivative;
-        static double positionKp;
-        static double positionKi;
-        static double positionKd;
-
-        static double distanceError;
-        static double distanceKp;
-        static double distanceKd;
-        static double lastDistance;
-
-        static double Kvelocity;
-        static double Kposition;
-        static double Kdistance;
-
-        static double INTEGRAL_LIMIT;
         static long long lastTime;
+
+        static const double WHEEL_RADIUS = 3.25;
+        static const double WHEEL_DISTANCE = 21.5;
+
+        static double velocity1LastError;
+        static double velocity2LastError;
+        static double velocity1Integral;
+        static double velocity2Integral;
+        static double velocity1Derivative;
+        static double velocity2Derivative;
+
+        static double velocityKp;
+        static double velocityKi;
+        static double velocityKd;
+        static double velocityIntegralLimit;
+        static double velocityDerivativeLimit;
 };
 
 #endif // CONTROL_SYSTEM_H

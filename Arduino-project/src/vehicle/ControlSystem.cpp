@@ -1,27 +1,27 @@
 #include "ControlSystem.h"
 #include <vector>
+#include <algorithm>
 #include <Arduino.h>
 
 // Define static member variables
-double ControlSystem::positionError;
-double ControlSystem::positionProportionalError;
-double ControlSystem::positionIntegral;
-double ControlSystem::positionDerivative;
-double ControlSystem::positionKp;
-double ControlSystem::positionKi;
-double ControlSystem::positionKd;
-
-double ControlSystem::distanceError;
-double ControlSystem::distanceKp;
-double ControlSystem::distanceKd;
-double ControlSystem::lastDistance;
-
-double ControlSystem::Kvelocity;
-double ControlSystem::Kposition;
-double ControlSystem::Kdistance;
-
-double ControlSystem::INTEGRAL_LIMIT;
 long long ControlSystem::lastTime;
+
+double const ControlSystem::WHEEL_RADIUS;
+double const ControlSystem::WHEEL_DISTANCE;
+
+double ControlSystem::velocity1LastError;
+double ControlSystem::velocity2LastError;
+double ControlSystem::velocity1Integral;
+double ControlSystem::velocity2Integral;
+double ControlSystem::velocity1Derivative;
+double ControlSystem::velocity2Derivative;
+
+double ControlSystem::velocityKp;
+double ControlSystem::velocityKi;
+double ControlSystem::velocityKd;
+double ControlSystem::velocityIntegralLimit;
+double ControlSystem::velocityDerivativeLimit;
+
 
 /* Control System diagram (may need improvements, like kalman filter and maybe a manual bypass):
 +-----------------+          ___________           +-----------------+       +-----------------+
@@ -44,109 +44,62 @@ long long ControlSystem::lastTime;
 
 void ControlSystem::init()
 {
-    positionError = 0;
-    positionProportionalError = 0;
-    positionIntegral = 0;
-    positionDerivative = 0;
-    positionKp = 0.6;
-    positionKi = 0.05;
-    positionKd = 0.2;
-
-    distanceError = 0;
-    distanceKp = 0.1;
-    distanceKd = 0.1;
-    lastDistance = 0;
-
-    Kvelocity = 0.4;
-    Kposition = 0.7;
-    Kdistance = 0.3;
-
-    INTEGRAL_LIMIT = 1000;
+    
     lastTime = millis();
 }
 
-std::vector<int> ControlSystem::update(double velocity1, double velocity2, double position, double distance, double desiredVelocity) {
+std::vector<int> ControlSystem::update(double velocity1, double velocity2, double desiredRadius, double desiredVelocity) {
     std::vector<int> controlSignal = {0, 0};
 
-    Serial.print("Inputs - V1: "); Serial.print(velocity1);
-    Serial.print(" V2: "); Serial.print(velocity2);
-    Serial.print(" Pos: "); Serial.print(position);
-    Serial.print(" Dist: "); Serial.print(distance);
-    Serial.print(" DesV: "); Serial.println(desiredVelocity);
+    if (lastTime == 0) lastTime = millis();
+    double deltaT = millis() - lastTime + 1;  // Avoid division by zero
 
-    if (lastTime == 0)
-        lastTime = millis();
-    double deltaT = millis() - lastTime + 1e-6;
+    // Reference velocities
+    double referenceVelocity1 = desiredVelocity * (1 - WHEEL_DISTANCE / (2 * desiredRadius));
+    double referenceVelocity2 = desiredVelocity * (1 + WHEEL_DISTANCE / (2 * desiredRadius));
 
-    // Calculate position errors
-    if (position == -1000)
-    { // No line detected
-        Serial.println("Debug: No line - Turning");
-        if (positionError < 0)
-        {
-            // Turn left
-            Serial.println("Debug: Turning Left");
-            return {230, -230};
-        }
-        else
-        {
-            // Turn right
-            Serial.println("Debug: Turning Right");
-            return {-230, 230};
-        }
-    }
-    else if (position == 1000)
-    { // Intersection detected
-        Serial.println("Debug: Intersection Detected");
-        positionError = 0;
-    }
-    else
-    { // Normal operation
-        double error = position;
-        positionProportionalError = positionKp * (error);
-        positionIntegral += positionKi * error * deltaT / 1000;
-        // Prevent integral windup
-        if (positionIntegral > INTEGRAL_LIMIT)
-            positionIntegral = INTEGRAL_LIMIT;
-        if (positionIntegral < -INTEGRAL_LIMIT)
-            positionIntegral = -INTEGRAL_LIMIT;
+    // Errors
+    double velocity1Error = referenceVelocity1 - velocity1;
+    double velocity2Error = referenceVelocity2 - velocity2;
 
-        positionDerivative = positionKd * (error - positionError) / deltaT;
+    // Compute alpha for rotation priority
+    double alpha = std::abs(velocity2Error - velocity1Error) / (std::abs(velocity2Error) + std::abs(velocity1Error) + 1e-6);
 
-        positionError = error;
-    }
-    Serial.println("Position: " + String(position) + ", Error: " + String(positionError) + ", Integral: " + String(positionIntegral) + ", Derivative: " + String(positionDerivative));
-    double positionControl = positionProportionalError + positionIntegral + positionDerivative;
-    Serial.println("Position Control: " + String(positionControl));
+    // Integral terms (clamped)
+    velocity1Integral = velocity1Integral + velocity1Error * deltaT, -velocityIntegralLimit;
+    velocity2Integral = velocity2Integral + velocity2Error * deltaT, -velocityIntegralLimit;
+    if (velocity1Integral > velocityIntegralLimit) velocity1Integral = velocityIntegralLimit;
+    if (velocity1Integral > -velocityIntegralLimit) velocity1Integral = -velocityIntegralLimit;
+    if (velocity2Integral > velocityIntegralLimit) velocity2Integral = velocityIntegralLimit;
+    if (velocity2Integral > -velocityIntegralLimit) velocity2Integral = -velocityIntegralLimit;
 
-    // Take distante into account
-    double distanceControl = 0;
-    distanceControl += distanceKp * distance;
-    distanceControl += distanceKd * (distance - lastDistance) / deltaT;
-    if (distanceControl < 0)
-        distanceControl = 0;
-    lastDistance = distance;
+    // Derivative terms (clamped)
+    velocity1Derivative = (velocity1Error - velocity1LastError) / deltaT, -velocityDerivativeLimit;
+    velocity2Derivative = (velocity2Error - velocity2LastError) / deltaT, -velocityDerivativeLimit;
+    if (velocity1Derivative > velocityDerivativeLimit) velocity1Derivative = velocityDerivativeLimit;
+    if (velocity1Derivative > -velocityDerivativeLimit) velocity1Derivative = -velocityDerivativeLimit;
+    if (velocity2Derivative > velocityDerivativeLimit) velocity2Derivative = velocityDerivativeLimit;
+    if (velocity2Derivative > -velocityDerivativeLimit) velocity2Derivative = -velocityDerivativeLimit;
 
-    // Calculate control signal
-    controlSignal[0] = int(velocity1 * Kvelocity + positionControl * Kposition - distanceControl * Kdistance);
-    controlSignal[1] = int(velocity2 * Kvelocity - positionControl * Kposition - distanceControl * Kdistance);
-    Serial.println("Control Signal: " + String(controlSignal[0]) + ", " + String(controlSignal[1]));
+    // PID Output
+    double rawControl1 = velocityKp * velocity1Error + velocityKi * velocity1Integral + velocityKd * velocity1Derivative;
+    double rawControl2 = velocityKp * velocity2Error + velocityKi * velocity2Integral + velocityKd * velocity2Derivative;
 
-    // Normalize control signal, proportionally to desired velocity
-    double maxControlSignal = max(abs(controlSignal[0]), abs(controlSignal[1]));
-    Serial.println("Max Control Signal: " + String(maxControlSignal));
-    if (controlSignal[0] == maxControlSignal) controlSignal[1] += maxControlSignal / 5;
-    if (controlSignal[1] == maxControlSignal) controlSignal[0] += maxControlSignal / 5;
-    if (maxControlSignal != 0) {
-        controlSignal[0] = controlSignal[0] * desiredVelocity / maxControlSignal;
-        controlSignal[1] = controlSignal[1] * desiredVelocity / maxControlSignal;
-    } else {
-        controlSignal = {int(desiredVelocity), int(desiredVelocity)};
+    // Apply rotation weight (alpha)
+    controlSignal[0] = rawControl1 * (1 - alpha);
+    controlSignal[1] = rawControl2 * (1 + alpha);
+
+    // Constraints to 255
+    int maxControl = std::max(std::abs(controlSignal[0]), std::abs(controlSignal[1]));
+    if (maxControl > 255) {
+        controlSignal[0] = controlSignal[0] * 255 / maxControl;
+        controlSignal[1] = controlSignal[1] * 255 / maxControl;
     }
 
-    Serial.print("Final Signals (L,R): "); 
-    Serial.print(controlSignal[0]); Serial.print(","); Serial.println(controlSignal[1]);
-
+    // Update previous values
+    velocity1LastError = velocity1Error;
+    velocity2LastError = velocity2Error;
     lastTime = millis();
+
     return controlSignal;
 }
