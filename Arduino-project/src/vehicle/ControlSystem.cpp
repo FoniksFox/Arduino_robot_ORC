@@ -42,8 +42,7 @@ double ControlSystem::velocityDerivativeLimit;
                          +-----------------+                                 +-----------------+
 */
 
-void ControlSystem::init()
-{
+void ControlSystem::init() {
     velocity1LastError = 0;
     velocity2LastError = 0;
     velocity1Integral = 0;
@@ -70,7 +69,7 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     if (desiredRadius == 0) desiredRadius = 1e-6;
     double referenceVelocity1 = desiredVelocity * (1 + WHEEL_DISTANCE / (2 * desiredRadius));
     double referenceVelocity2 = desiredVelocity * (1 - WHEEL_DISTANCE / (2 * desiredRadius));
-    Serial.println("Reference Velocity 1: " + String(referenceVelocity1) + ", Reference Velocity 2: " + String(referenceVelocity2));
+    //Serial.println("Reference Velocity 1: " + String(referenceVelocity1) + ", Reference Velocity 2: " + String(referenceVelocity2));
 
     // Errors
     double velocity1Error = referenceVelocity1 - velocity1;

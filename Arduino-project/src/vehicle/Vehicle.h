@@ -34,6 +34,10 @@ class Vehicle : public IVehicle, public Bluetooth {
         VelocitySensor velocitySensor1;
         VelocitySensor velocitySensor2;
 
+        double angleSensibility;
+        double velocitySensibility;
+        double distanceSensibility;
+
         long long lastUpdateTime;
         double direction;
         double desiredDirection;
