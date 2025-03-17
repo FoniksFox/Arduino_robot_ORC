@@ -17,10 +17,13 @@ void setup()
 
 void loop() {
   // put your main code here, to run repeatedly:
-  Serial.println("Updating vehicle");
+  //Serial.println("Updating vehicle");
   vehicle.update();
-  pinMode(4, INPUT);
-  Serial.println(analogRead(4));
-  if (lastTime + 10 > millis()) delay(lastTime + 10 - millis());
+  //pinMode(4, INPUT);
+  //Serial.println(analogRead(4));
+  unsigned long currentTime = millis();
+  if (currentTime - lastTime < 100) delay(100 - (currentTime - lastTime));
+  currentTime = millis();
+  Serial.println("Time spent: " + String(currentTime - lastTime));
   lastTime = millis();
 }

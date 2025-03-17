@@ -75,11 +75,11 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     // Errors
     double velocity1Error = referenceVelocity1 - velocity1;
     double velocity2Error = referenceVelocity2 - velocity2;
-    Serial.println("Velocity 1 Error: " + String(velocity1Error) + ", Velocity 2 Error: " + String(velocity2Error));
+    //Serial.println("Velocity 1 Error: " + String(velocity1Error) + ", Velocity 2 Error: " + String(velocity2Error));
 
     // Compute alpha for rotation priority
     double alpha =0;// std::abs(velocity2Error - velocity1Error) / (std::abs(velocity2Error) + std::abs(velocity1Error) + 1e-6);
-    Serial.println("Alpha: " + String(alpha));
+    //Serial.println("Alpha: " + String(alpha));
 
     // Integral terms (clamped)
     velocity1Integral = velocity1Integral + velocity1Error * deltaT;
@@ -88,27 +88,27 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     if (velocity1Integral < -velocityIntegralLimit) velocity1Integral = -velocityIntegralLimit;
     if (velocity2Integral > velocityIntegralLimit) velocity2Integral = velocityIntegralLimit;
     if (velocity2Integral < -velocityIntegralLimit) velocity2Integral = -velocityIntegralLimit;
-    Serial.println("Velocity 1 Integral: " + String(velocity1Integral) + ", Velocity 2 Integral: " + String(velocity2Integral));
+    //Serial.println("Velocity 1 Integral: " + String(velocity1Integral) + ", Velocity 2 Integral: " + String(velocity2Integral));
 
     // Derivative terms (clamped)
-    Serial.println("Delta error1: " + String(velocity1Error - velocity1LastError) + ", Delta error2: " + String(velocity2Error - velocity2LastError));
+    //Serial.println("Delta error1: " + String(velocity1Error - velocity1LastError) + ", Delta error2: " + String(velocity2Error - velocity2LastError));
     velocity1Derivative = (velocity1Error - velocity1LastError) / (deltaT/100);
     velocity2Derivative = (velocity2Error - velocity2LastError) / (deltaT/100);
     if (velocity1Derivative > velocityDerivativeLimit) velocity1Derivative = velocityDerivativeLimit;
     if (velocity1Derivative < -velocityDerivativeLimit) velocity1Derivative = -velocityDerivativeLimit;
     if (velocity2Derivative > velocityDerivativeLimit) velocity2Derivative = velocityDerivativeLimit;
     if (velocity2Derivative < -velocityDerivativeLimit) velocity2Derivative = -velocityDerivativeLimit;
-    Serial.println("Velocity 1 Derivative: " + String(velocity1Derivative) + ", Velocity 2 Derivative: " + String(velocity2Derivative));
+    //Serial.println("Velocity 1 Derivative: " + String(velocity1Derivative) + ", Velocity 2 Derivative: " + String(velocity2Derivative));
 
     // PID Output
     double rawControl1 = velocityKp * velocity1Error + velocityKi * velocity1Integral + velocityKd * velocity1Derivative;
     double rawControl2 = velocityKp * velocity2Error + velocityKi * velocity2Integral + velocityKd * velocity2Derivative;
-    Serial.println("Raw Control 1: " + String(rawControl1) + ", Raw Control 2: " + String(rawControl2));
+    //Serial.println("Raw Control 1: " + String(rawControl1) + ", Raw Control 2: " + String(rawControl2));
 
     // Apply rotation weight (alpha)
     controlSignal[0] = rawControl1 * (1 - alpha);
     controlSignal[1] = rawControl2 * (1 + alpha);
-    Serial.println("Control Signal 1: " + String(controlSignal[0]) + ", Control Signal 2: " + String(controlSignal[1]));
+    //Serial.println("Control Signal 1: " + String(controlSignal[0]) + ", Control Signal 2: " + String(controlSignal[1]));
 
     // Constraints to 255
     int maxControl = std::max(std::abs(controlSignal[0]), std::abs(controlSignal[1]));

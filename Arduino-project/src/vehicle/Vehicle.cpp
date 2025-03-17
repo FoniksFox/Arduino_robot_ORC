@@ -77,8 +77,10 @@ void Vehicle::update() {
     }
     std::vector<int> controlState = {0, 0};
 
-    Serial.println("Direction : " + String(direction));
-    Serial.println("Velocity : " + String(velocity));
+    //Serial.println("Direction : " + String(direction));
+    //Serial.println("Velocity : " + String(velocity));
+
+    /*
     double angle = desiredDirection - direction;
     if (angle > 180) {
         angle = angle - 360;
@@ -86,6 +88,7 @@ void Vehicle::update() {
         angle = angle + 360;
     }
     double directionError = 7800000/(angle*angle*angle);
+    */
     double motor1Error = 0;
     double motor2Error = 0;
     switch (mode) {
@@ -157,14 +160,17 @@ void Vehicle::update() {
             break;
 
         case 4: // Football / Manual control
-            Serial.println("Manual control");
-            Serial.println("Desired Direction: " + String(desiredDirection) + ", Desired Velocity: " + String(desiredVelocity));
+            
+            //Serial.println("Manual control");
+            //Serial.println("Desired Direction: " + String(desiredDirection) + ", Desired Velocity: " + String(desiredVelocity));
+            /*
             directionError = desiredDirection - direction;
             if (directionError > 180) {
                 directionError = directionError - 360;
             } else if (directionError < -180) {
                 directionError = directionError + 360;
             }
+            */
             if (motor1.getSpeed() < 0) {
                 motor1Error = -velocitySensor1.getVelocity();
             } else {
@@ -175,14 +181,15 @@ void Vehicle::update() {
             } else {
                 motor2Error = velocitySensor2.getVelocity();
             }
-            controlState = ControlSystem::update(motor1Error, motor2Error, directionError, desiredVelocity);
+            controlState = ControlSystem::update(motor1Error, motor2Error, desiredDirection, desiredVelocity);
+            
             break;
 
         default:
             break;
     }
 
-    Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
+    //Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
 
@@ -222,7 +229,6 @@ VelocitySensor Vehicle::getVelocitySensor2() {
 }
 
 void Vehicle::processOrder(StaticJsonDocument<200> doc) {
-    // Example orders
     int command = doc["0"].as<int>();
     //Serial.println(command);
     switch (command) {
@@ -267,7 +273,7 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
                 angle = angle + 360;
             }
             if (angle == 0) angle = 1;
-            desiredDirection = angle;
+            desiredDirection = 7800000/(angle*angle*angle);
             desiredVelocity = int(doc["2"])/3;
             //Serial.println("Direction: " + String(desiredDirection) + ", Velocity: " + String(desiredVelocity));
             break;

@@ -321,5 +321,5 @@ void Bluetooth::processBatteryReadings() {
     }
     
     // Debug output
-    Serial.println("Batería:" + String(battery));
+    //Serial.println("Batería:" + String(battery));
 }
