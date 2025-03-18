@@ -21,20 +21,27 @@ double LineSensor::getLinePosition() { // Returns values between -45 and 45 degr
     int sum = 0;
 
     for (int i = 0; i < 8; i++) {
-        double value = analogRead(sensors[i]);
+        int value = analogRead(sensors[i]);
         //Serial.println("Sensor " + String(i) + ": " + String(value));
-        value = 4095 - value;
-        value /= 4095;
+        if (value > 4000) {
+            value = 1;
+        } else {
+            value = 0;
+        }
         //Serial.println("Value: " + String(value));
+        sum += value;
         position += value * (7 - i - 3.5);
     }
 
-    return position/3.5*20;
+    if (sum == 0) {
+        return 0; // Intersection
+    }
+    return (position / sum)/3.5*30;
 }
 
 bool LineSensor::isLineDetected() {
     for(int i = 0; i < 8; i++) {
-        if(analogRead(sensors[i]) < 1000) {
+        if(analogRead(sensors[i]) > 4000) {
             return true;
         }
     }
