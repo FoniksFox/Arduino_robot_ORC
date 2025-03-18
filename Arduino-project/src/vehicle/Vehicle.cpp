@@ -119,13 +119,26 @@ void Vehicle::update() {
 
         case 1: // Velocity
             Serial.println("Velocity Challenge");
-            desiredDirection = lineSensor.getLinePosition();
+            if (lineSensor.isLineDetected()) {
+                desiredDirection = lineSensor.getLinePosition();
+                if (desiredDirection >= 0) {
+                    lastLine = 1;
+                } else {
+                    lastLine = -1;
+                }
+            } else {
+                if (lastLine == 1) {
+                    desiredDirection = 45;
+                } else {
+                    desiredDirection = -45;
+                }
+            }
             if (desiredDirection == 0) {
                 desiredDirection = 1;
             }
-            desiredDirection = 1000/(desiredDirection);
-            Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String(desiredDirection) + ", " + String(100));
-            controlState = ControlSystem::update(motor1Error, motor2Error, desiredDirection, 100);
+            desiredDirection = (angleSensibility)/(desiredDirection);
+            Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String(desiredDirection) + ", " + String(velocitySensibility));
+            controlState = ControlSystem::update(motor1Error, motor2Error, desiredDirection, velocitySensibility);
             break;
 
         case 2: // Obstacles course

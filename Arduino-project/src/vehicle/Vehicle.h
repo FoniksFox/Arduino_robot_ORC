@@ -45,6 +45,9 @@ class Vehicle : public IVehicle, public Bluetooth {
         double desiredVelocity;
         int mode;
 
+        // Vehicle specific variables
+        short lastLine;
+
         // Obstacles course specific variables
         short line;
 
