@@ -22,7 +22,7 @@ void loop() {
   //pinMode(4, INPUT);
   //Serial.println(analogRead(4));
   unsigned long currentTime = millis();
-  if (currentTime - lastTime < 50) delay(50 - (currentTime - lastTime));
+  if (currentTime - lastTime < 10) delay(10 - (currentTime - lastTime));
   currentTime = millis();
   Serial.println("Time spent: " + String(currentTime - lastTime));
   lastTime = millis();

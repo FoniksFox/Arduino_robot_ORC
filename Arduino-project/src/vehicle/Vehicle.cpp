@@ -211,7 +211,7 @@ void Vehicle::update() {
 
             //Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String((angleSensibility*angleSensibility*angleSensibility)/(desiredDirection*desiredDirection*desiredDirection)) + ", " + String(desiredVelocity));
             controlState = ControlSystem::update(motor1Error, motor2Error, (angleSensibility*angleSensibility*angleSensibility)/(desiredDirection*desiredDirection*desiredDirection), desiredVelocity);
-            
+            Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
             break;
 
         default:
@@ -282,9 +282,9 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             break;
         case 2: // Set constants
             //Serial.println("Constants Changed");
-            ControlSystem::velocityKp = static_cast<double>(doc["1"]) / 10.0;
-            ControlSystem::velocityKi = static_cast<double>(doc["2"]) / 10.0;
-            ControlSystem::velocityKd = static_cast<double>(doc["3"]) / 10.0;
+            ControlSystem::velocityKp = static_cast<double>(doc["1"]) / 100.0;
+            ControlSystem::velocityKi = static_cast<double>(doc["2"]) / 100.0;
+            ControlSystem::velocityKd = static_cast<double>(doc["3"]) / 100.0;
             ControlSystem::velocityDerivativeLimit = static_cast<double>(doc["4"]);
             ControlSystem::velocityIntegralLimit = static_cast<double>(doc["5"]);
             angleSensibility = static_cast<double>(doc["6"]) * 20.0;

@@ -20,7 +20,7 @@ double LineSensor::getLinePosition() { // Returns values between -45 and 45 degr
     double position = 0;
     int sum = 0;
 
-    for (int i = 1; i < 7; i++) {
+    for (int i = 2; i < 6; i++) {
         int value = analogRead(sensors[i]);
         //Serial.println("Sensor " + String(i) + ": " + String(value));
         if (value > 4000) {
@@ -28,7 +28,7 @@ double LineSensor::getLinePosition() { // Returns values between -45 and 45 degr
         } else {
             value = 0;
         }
-        //Serial.println("Value: " + String(value));
+        Serial.println("Value: " + String(value));
         sum += value;
         position += value * (7 - i - 3.5);
     }
@@ -36,11 +36,11 @@ double LineSensor::getLinePosition() { // Returns values between -45 and 45 degr
     if (sum == 0) {
         return 0; // Intersection
     }
-    return (position / sum)/3.5*40;
+    return (position / sum)/3.5*90;
 }
 
 bool LineSensor::isLineDetected() {
-    for(int i = 1; i < 7; i++) {
+    for(int i = 2; i < 6; i++) {
         if(analogRead(sensors[i]) > 4000) {
             Serial.println("Line detected");
             return true;

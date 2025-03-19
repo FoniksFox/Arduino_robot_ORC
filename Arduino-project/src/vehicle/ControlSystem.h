@@ -9,6 +9,8 @@ class ControlSystem{
         static std::vector<int> update(double velocity1, double velocity2, double desiredRadius, double desiredVelocity);
         
         static long long lastTime;
+        static int previousControlSignal1;
+        static int previousControlSignal2;
 
         static constexpr double WHEEL_RADIUS = 3.25;
         static constexpr double WHEEL_DISTANCE = 21.5;

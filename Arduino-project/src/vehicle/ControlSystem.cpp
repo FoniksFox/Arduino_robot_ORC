@@ -5,6 +5,8 @@
 
 // Define static member variables
 long long ControlSystem::lastTime;
+int ControlSystem::previousControlSignal1;
+int ControlSystem::previousControlSignal2;
 
 double const ControlSystem::WHEEL_RADIUS;
 double const ControlSystem::WHEEL_DISTANCE;
@@ -22,25 +24,6 @@ double ControlSystem::velocityKd;
 double ControlSystem::velocityIntegralLimit;
 double ControlSystem::velocityDerivativeLimit;
 
-
-/* Control System diagram (may need improvements, like kalman filter and maybe a manual bypass):
-+-----------------+          ___________           +-----------------+       +-----------------+
-|  Theoretical    |         /           \          |   Controller    |       |   Actuators     |
-|    State        |      + /             \         |                 |       |                 |
-|   (Vector)      +------>|               |------->+                 +------>+                 |
-|    [v1, v2]     |        \             /         |   PID Control   |       |     Motors      |
-|                 |         \___________/          |   (Vector)      |       |    [v1, v2]     |
-+-----------------+               ^ -              +-----------------+       +--------+--------+
-                                  |                                                   |
-                                  |                                                   |
-                                  |                                                   v
-                         +--------+--------+                                 +--------+--------+
-                         |   Sensors       |                                 |   Vehicle       |
-                         |   (Vector)      |                                 |  Dynamics       |
-                         | [v1, v2, p, d]  +<--------------------------------+                 |
-                         |                 |                                 |                 |
-                         +-----------------+                                 +-----------------+
-*/
 
 void ControlSystem::init() {
     velocity1LastError = 0;
@@ -63,51 +46,79 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     std::vector<int> controlSignal = {0, 0};
 
     if (lastTime == 0) lastTime = millis();
-    double deltaT = millis() - lastTime + 1;  // Avoid division by zero
+    double deltaT = static_cast<double>(millis() - lastTime) / 1000.0;  // Convert ms to seconds
+    if (deltaT <= 0) deltaT = 1e-6;  // Prevent division by zero
 
     // Reference velocities
     if (desiredRadius == 0) desiredRadius = 1e-6;
     double referenceVelocity1 = desiredVelocity * (1 + WHEEL_DISTANCE / (2 * desiredRadius));
     double referenceVelocity2 = desiredVelocity * (1 - WHEEL_DISTANCE / (2 * desiredRadius));
-    //Serial.println("Reference Velocity 1: " + String(referenceVelocity1) + ", Reference Velocity 2: " + String(referenceVelocity2));
 
     // Errors
     double velocity1Error = referenceVelocity1 - velocity1;
     double velocity2Error = referenceVelocity2 - velocity2;
-    //Serial.println("Velocity 1 Error: " + String(velocity1Error) + ", Velocity 2 Error: " + String(velocity2Error));
+
+    // Error constraints (to prevent extreme values)
+    const double MAX_ERROR = 500;
+    if (velocity1Error > MAX_ERROR) velocity1Error = MAX_ERROR;
+    if (velocity1Error < -MAX_ERROR) velocity1Error = -MAX_ERROR;
+    if (velocity2Error > MAX_ERROR) velocity2Error = MAX_ERROR;
+    if (velocity2Error < -MAX_ERROR) velocity2Error = -MAX_ERROR;
 
     // Compute alpha for rotation priority
-    double alpha =0;// std::abs(velocity2Error - velocity1Error) / (std::abs(velocity2Error) + std::abs(velocity1Error) + 1e-6);
-    //Serial.println("Alpha: " + String(alpha));
+    double alpha = std::min(1.0, std::max(0.0, std::abs(velocity2Error - velocity1Error) /
+              (std::abs(velocity2Error) + std::abs(velocity1Error) + 1e-6)));
+    //Take the sign of alpha
+    if (velocity2Error - velocity1Error < 0) alpha = -alpha;
+    alpha = 0;  // Disable rotation priority
 
     // Integral terms (clamped)
-    velocity1Integral = velocity1Integral + velocity1Error * deltaT;
-    velocity2Integral = velocity2Integral + velocity2Error * deltaT;
+    velocity1Integral += velocity1Error * deltaT;
+    velocity2Integral += velocity2Error * deltaT;
     if (velocity1Integral > velocityIntegralLimit) velocity1Integral = velocityIntegralLimit;
     if (velocity1Integral < -velocityIntegralLimit) velocity1Integral = -velocityIntegralLimit;
     if (velocity2Integral > velocityIntegralLimit) velocity2Integral = velocityIntegralLimit;
     if (velocity2Integral < -velocityIntegralLimit) velocity2Integral = -velocityIntegralLimit;
-    //Serial.println("Velocity 1 Integral: " + String(velocity1Integral) + ", Velocity 2 Integral: " + String(velocity2Integral));
 
-    // Derivative terms (clamped)
-    //Serial.println("Delta error1: " + String(velocity1Error - velocity1LastError) + ", Delta error2: " + String(velocity2Error - velocity2LastError));
-    velocity1Derivative = (velocity1Error - velocity1LastError) / (deltaT/100);
-    velocity2Derivative = (velocity2Error - velocity2LastError) / (deltaT/100);
+    // Reset integral if output is saturated
+    if (std::abs(previousControlSignal1) >= 220) velocity1Integral -= velocity1Error * deltaT;
+    if (std::abs(previousControlSignal2) >= 220) velocity2Integral -= velocity2Error * deltaT;
+
+    // Derivative terms with smoothing
+    const double derivativeSmoothing = 0.5;
+    double newVelocity1Derivative = (velocity1Error - velocity1LastError) / deltaT;
+    double newVelocity2Derivative = (velocity2Error - velocity2LastError) / deltaT;
+    velocity1Derivative = derivativeSmoothing * velocity1Derivative + (1 - derivativeSmoothing) * newVelocity1Derivative;
+    velocity2Derivative = derivativeSmoothing * velocity2Derivative + (1 - derivativeSmoothing) * newVelocity2Derivative;
     if (velocity1Derivative > velocityDerivativeLimit) velocity1Derivative = velocityDerivativeLimit;
     if (velocity1Derivative < -velocityDerivativeLimit) velocity1Derivative = -velocityDerivativeLimit;
     if (velocity2Derivative > velocityDerivativeLimit) velocity2Derivative = velocityDerivativeLimit;
     if (velocity2Derivative < -velocityDerivativeLimit) velocity2Derivative = -velocityDerivativeLimit;
-    //Serial.println("Velocity 1 Derivative: " + String(velocity1Derivative) + ", Velocity 2 Derivative: " + String(velocity2Derivative));
 
     // PID Output
+    //Serial.println("Velocity 1 Error: " + String(velocity1Error) + ", Velocity 2 Error: " + String(velocity2Error));
+    //Serial.println("Velocity 1 Integral: " + String(velocity1Integral) + ", Velocity 2 Integral: " + String(velocity2Integral));
+    //Serial.println("Velocity 1 Derivative: " + String(velocity1Derivative) + ", Velocity 2 Derivative: " + String(velocity2Derivative));
     double rawControl1 = velocityKp * velocity1Error + velocityKi * velocity1Integral + velocityKd * velocity1Derivative;
     double rawControl2 = velocityKp * velocity2Error + velocityKi * velocity2Integral + velocityKd * velocity2Derivative;
-    //Serial.println("Raw Control 1: " + String(rawControl1) + ", Raw Control 2: " + String(rawControl2));
 
     // Apply rotation weight (alpha)
     controlSignal[0] = rawControl1 * (1 - alpha);
     controlSignal[1] = rawControl2 * (1 + alpha);
-    //Serial.println("Control Signal 1: " + String(controlSignal[0]) + ", Control Signal 2: " + String(controlSignal[1]));
+
+    // Velocity feedforward (faster response)
+    double feedforward1 = 0.9 * previousControlSignal1;
+    double feedforward2 = 0.9 * previousControlSignal2;
+    controlSignal[0] += feedforward1;
+    controlSignal[1] += feedforward2;
+
+    // Rate limiter (prevent sudden jumps)
+    int MAX_CHANGE = deltaT*3000;  // Max change per cycle
+    if (MAX_CHANGE > 100) MAX_CHANGE = 100;
+    if (controlSignal[0] - previousControlSignal1 > MAX_CHANGE) controlSignal[0] = previousControlSignal1 + MAX_CHANGE;
+    if (controlSignal[0] - previousControlSignal1 < -MAX_CHANGE) controlSignal[0] = previousControlSignal1 - MAX_CHANGE;
+    if (controlSignal[1] - previousControlSignal2 > MAX_CHANGE) controlSignal[1] = previousControlSignal2 + MAX_CHANGE;
+    if (controlSignal[1] - previousControlSignal2 < -MAX_CHANGE) controlSignal[1] = previousControlSignal2 - MAX_CHANGE;
 
     // Constraints to 255
     int maxControl = std::max(std::abs(controlSignal[0]), std::abs(controlSignal[1]));
@@ -119,7 +130,10 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     // Update previous values
     velocity1LastError = velocity1Error;
     velocity2LastError = velocity2Error;
+    previousControlSignal1 = controlSignal[0];
+    previousControlSignal2 = controlSignal[1];
     lastTime = millis();
 
     return controlSignal;
 }
+
