@@ -114,11 +114,11 @@ void Vehicle::update() {
     }
     switch (mode) {
         case 0: // Wait still
-            Serial.println("Nothing");
+            //Serial.println("Nothing");
             break;
 
         case 1: // Velocity
-            Serial.println("Velocity Challenge");
+            //Serial.println("Velocity Challenge");
             if (lineSensor.isLineDetected()) {
                 desiredDirection = lineSensor.getLinePosition();
                 if (desiredDirection >= 0) {
@@ -149,7 +149,7 @@ void Vehicle::update() {
             break;
 
         case 2: // Obstacles course
-            Serial.println("Obstacle Course");
+            //Serial.println("Obstacle Course");
             if (distanceSensor.getDistance() < 20) {
                 if (line = 0) {
                     controlState = {255, 100};
@@ -196,7 +196,7 @@ void Vehicle::update() {
             break;
 
         case 3: // Maze solver
-            Serial.println("Maze Solver");
+            //Serial.println("Maze Solver");
             // Implement maze solver
             if (repetition == 0) {
                 // Maze recognition, run dfs
@@ -247,7 +247,7 @@ void Vehicle::update() {
 
             //Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String((angleSensibility*angleSensibility*angleSensibility)/(desiredDirection*desiredDirection*desiredDirection)) + ", " + String(desiredVelocity));
             controlState = ControlSystem::update(motor1Error, motor2Error, (angleSensibility*angleSensibility*angleSensibility)/(desiredDirection*desiredDirection*desiredDirection), desiredVelocity);
-            Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
+            //Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
             break;
 
         default:

@@ -24,6 +24,6 @@ void loop() {
   unsigned long currentTime = millis();
   if (currentTime - lastTime < 10) delay(10 - (currentTime - lastTime));
   currentTime = millis();
-  Serial.println("Time spent: " + String(currentTime - lastTime));
+  //Serial.println("Time spent: " + String(currentTime - lastTime));
   lastTime = millis();
 }
