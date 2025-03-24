@@ -137,25 +137,61 @@ void Vehicle::update() {
                 desiredDirection = 1;
             }
             desiredDirection = (angleSensibility)/(desiredDirection);
-            Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String(desiredDirection) + ", " + String(velocitySensibility));
+            //Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String(desiredDirection) + ", " + String(velocitySensibility));
             controlState = ControlSystem::update(motor1Error, motor2Error, desiredDirection, velocitySensibility);
+            /*
+            if (desideredDirection > 0) {
+                controlState = {255, 0};
+            } else {
+                controlState = {0, 255};
+            }
+            */
             break;
 
         case 2: // Obstacles course
             Serial.println("Obstacle Course");
             if (distanceSensor.getDistance() < 20) {
                 if (line = 0) {
-                    controlState = {255, -255};
+                    controlState = {255, 100};
+                    delay(1000);
                     line = 1;
+                    lastLine = -1;
                 } else {
-                    controlState = {-255, 255};
+                    controlState = {100, 255};
+                    delay(1000);
                     line = 0;
+                    lastLine = 1;
                 }
                 motor1.setSpeed(controlState[0]);
                 motor2.setSpeed(controlState[1]);
                 delay(1000);
             } else {
-                //controlState = ControlSystem::update(velocitySensor1.getVelocity(), velocitySensor2.getVelocity(), lineSensor.getLinePosition(), distanceSensor.getDistance(), 255);
+                if (lineSensor.isLineDetected()) {
+                    desiredDirection = lineSensor.getLinePosition();
+                    if (desiredDirection >= 0) {
+                        lastLine = 1;
+                    } else {
+                        lastLine = -1;
+                    }
+                } else {
+                    if (lastLine == 1) {
+                        desiredDirection = 45;
+                    } else {
+                        desiredDirection = -45;
+                    }
+                }
+                if (desiredDirection == 0) {
+                    desiredDirection = 1;
+                }
+                directionError = (angleSensibility)/(desiredDirection);
+                controlState = ControlSystem::update(motor1Error, motor2Error, directionError, velocitySensibility);
+                /*
+                if (desideredDirection > 0) {
+                    controlState = {255, 0};
+                } else {
+                    controlState = {0, 255};
+                }
+                */
             }
             break;
 
