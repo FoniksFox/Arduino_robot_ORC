@@ -14,7 +14,6 @@ void setup() {
 }
 
 void loop() {
-  //Serial.println("Updating vehicle");
   vehicle.update();
   unsigned long currentTime = millis();
   if (currentTime - lastTime < 10) delay(10 - (currentTime - lastTime));

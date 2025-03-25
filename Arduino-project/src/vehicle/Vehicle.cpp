@@ -76,19 +76,12 @@ void Vehicle::update() {
     if (motor1.getSpeed() == 0) v1 = 0;
     double v2 = motor2.getSpeed() > 0 ? velocitySensor2.getVelocity() : -velocitySensor2.getVelocity();
     if (motor2.getSpeed() == 0) v2 = 0;
-    //Serial.println("V1: " + String(v1) + ", V2: " + String(v2));
     direction = direction + (v1 - v2) / 21.5 * (360.0 / (2 * PI)) * (deltaT / 1000.0);
-    //Serial.println("Direction moved: " + String((v1 - v2) / 21.5 * (360.0 / (2 * PI)) * (deltaT / 1000.0)));
     if (direction > 180) {
         direction = direction - 360;
     } else if (direction < -180) {
         direction = direction + 360;
     }
-    //Serial.println("Direction: " + String(direction));
-
-    //Serial.println("Direction : " + String(direction));
-    //Serial.println("Velocity : " + String(velocity));
-
 
 
     double directionError = 0;
@@ -169,7 +162,6 @@ void Vehicle::update() {
             break;
     }
 
-    //Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
     motor1.setSpeed(controlState[0]);
     motor2.setSpeed(controlState[1]);
 
