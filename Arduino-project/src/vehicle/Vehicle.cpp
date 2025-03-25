@@ -123,6 +123,7 @@ void Vehicle::update() {
     switch (mode) {
         case 0: // Wait still
             controlState = {0, 0};
+            ControlSystem::update(v1, v2, 100000000, 0);
             break;
 
         case 1: // Velocity
