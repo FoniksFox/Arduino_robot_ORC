@@ -7,7 +7,7 @@
 
 // Components initialization
 DistanceSensor distanceSensor(13, 18);
-int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
+int sensors[8] = {26, 25, 33, 32, 35, 39, 34, 36};
 LineSensor lineSensor(27, sensors);
 VelocitySensor velocitySensor1(16);
 VelocitySensor velocitySensor2(17);
