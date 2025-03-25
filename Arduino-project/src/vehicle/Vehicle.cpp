@@ -35,6 +35,7 @@ void Vehicle::init() {
     commandCallback = nullptr;
     begin();
 
+    rightAnglePoint = 90;
     angleSensibility = 1;
     velocitySensibility = 0;
     distanceSensibility = 0;
@@ -66,10 +67,10 @@ void Vehicle::init() {
 
 void Vehicle::update() {
     long deltaT = millis() - lastUpdateTime;
-    if (deltaT < 10) {
-        return;
-    }
+    if (deltaT < 10) return;
     lastUpdateTime = millis();
+
+
     velocity = (velocitySensor1.getVelocity() + velocitySensor2.getVelocity()) / 2;
     double v1 = motor1.getSpeed() > 0 ? velocitySensor1.getVelocity() : -velocitySensor1.getVelocity();
     if (motor1.getSpeed() == 0) v1 = 0;
@@ -84,73 +85,59 @@ void Vehicle::update() {
         direction = direction + 360;
     }
     //Serial.println("Direction: " + String(direction));
-    std::vector<int> controlState = {0, 0};
 
     //Serial.println("Direction : " + String(direction));
     //Serial.println("Velocity : " + String(velocity));
 
-    double angle = desiredDirection - direction;
-    if (angle > 180) {
-        angle = angle - 360;
-    } else if (angle < -180) {
-        angle = angle + 360;
-    }
-    double directionError = 100000/(angle*angle);
-    if (angle < 0) {
-        directionError = -directionError;
-    }
-    double motor1Error = 0;
-    double motor2Error = 0;
 
-    if (motor1.getSpeed() < 0) {
-        motor1Error = -velocitySensor1.getVelocity();
-    } else {
-        motor1Error = velocitySensor1.getVelocity();
-    }
-    if (motor2.getSpeed() < 0) {
-        motor2Error = -velocitySensor2.getVelocity();
-    } else {
-        motor2Error = velocitySensor2.getVelocity();
-    }
-    switch (mode) {
-        case 0: // Wait still
-            //Serial.println("Nothing");
-            break;
 
-        case 1: // Velocity
-            //Serial.println("Velocity Challenge");
-            if (lineSensor.isLineDetected()) {
-                desiredDirection = lineSensor.getLinePosition();
-                if (desiredDirection >= 0) {
-                    lastLine = 1;
-                } else {
-                    lastLine = -1;
-                }
+    double directionError = 0;
+    if (mode == 1 || mode == 2) {
+        if (lineSensor.isLineDetected()) {
+            directionError = lineSensor.getLinePosition();
+            if (directionError >= 0) {
+                lastLine = 1;
             } else {
-                if (lastLine == 1) {
-                    desiredDirection = 45;
-                } else {
-                    desiredDirection = -45;
-                }
+                lastLine = -1;
             }
-            if (desiredDirection == 0) {
-                desiredDirection = 1;
+        } else {
+            if (lastLine == 1) {
+                directionError = 45;
+            } else {
+                directionError = -45;
             }
-            desiredDirection = (angleSensibility)/(desiredDirection);
-            //Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String(desiredDirection) + ", " + String(velocitySensibility));
-            controlState = ControlSystem::update(motor1Error, motor2Error, desiredDirection, velocitySensibility);
-            /*
+        }
+        /* Backup bang bang controller
             if (desideredDirection > 0) {
                 controlState = {255, 0};
             } else {
                 controlState = {0, 255};
             }
-            */
+        */
+    } else if (mode == 4) {
+        directionError = desiredDirection;
+    }
+    if (directionError == 0) {
+        directionError = 1;
+    }
+    double directionRadius = (pow(rightAnglePoint, angleSensibility) * 10.75) / pow(directionError, angleSensibility);
+    if (directionError < 0) {
+        directionRadius = -directionRadius;
+    }
+
+
+    std::vector<int> controlState = {0, 0};
+    switch (mode) {
+        case 0: // Wait still
+            controlState = {0, 0};
+            break;
+
+        case 1: // Velocity
+            controlState = ControlSystem::update(v1, v2, directionRadius, velocitySensibility);
             break;
 
         case 2: // Obstacles course
-            //Serial.println("Obstacle Course");
-            if (distanceSensor.getDistance() < 20) {
+            if (distanceSensor.getDistance() < distanceSensibility) {
                 if (line = 0) {
                     controlState = {255, 100};
                     delay(1000);
@@ -166,88 +153,16 @@ void Vehicle::update() {
                 motor2.setSpeed(controlState[1]);
                 delay(1000);
             } else {
-                if (lineSensor.isLineDetected()) {
-                    desiredDirection = lineSensor.getLinePosition();
-                    if (desiredDirection >= 0) {
-                        lastLine = 1;
-                    } else {
-                        lastLine = -1;
-                    }
-                } else {
-                    if (lastLine == 1) {
-                        desiredDirection = 45;
-                    } else {
-                        desiredDirection = -45;
-                    }
-                }
-                if (desiredDirection == 0) {
-                    desiredDirection = 1;
-                }
-                directionError = (angleSensibility)/(desiredDirection);
-                controlState = ControlSystem::update(motor1Error, motor2Error, directionError, velocitySensibility);
-                /*
-                if (desideredDirection > 0) {
-                    controlState = {255, 0};
-                } else {
-                    controlState = {0, 255};
-                }
-                */
+                controlState = ControlSystem::update(v1, v2, directionRadius, velocitySensibility);
             }
             break;
 
         case 3: // Maze solver
-            //Serial.println("Maze Solver");
             // Implement maze solver
-            if (repetition == 0) {
-                // Maze recognition, run dfs
-                if (distanceSensor.getDistance() < 10) {
-                    // Wall ahead
-                    if (direction == 0) {
-                        maze[7*mazeY + mazeX][7*(mazeY-1) + mazeX] = 1;
-                    } else if (direction == 90) {
-                        maze[7*mazeY + mazeX][7*mazeY* + (mazeX+1)] = 2;
-                    } else if (direction == 180) {
-                        maze[7*mazeY + mazeX][7*(mazeY+1) + mazeX] = 1;
-                    } else if (direction == 270) {
-                        maze[7*mazeY + mazeX][7*mazeY* + (mazeX-1)] = 2;
-                    }
-                }
-                // Check next direction
-                if (maze[7*mazeY + mazeX][7*(mazeY-1) + mazeX] == -1) {
-                    desiredDirection = 0;
-                } else if (maze[7*mazeY + mazeX][7*mazeY* + (mazeX+1)] == -1) {
-                    desiredDirection = 90;
-                } else if (maze[7*mazeY + mazeX][7*(mazeY+1) + mazeX] == -1) {
-                    desiredDirection = 180;
-                } else if (maze[7*mazeY + mazeX][7*mazeY* + (mazeX-1)] == -1) {
-                    desiredDirection = 270;
-                } else {
-                    // Run dfs
-
-                }
-            } else if (repetition == 1) {
-                // Run maze with lax speed
-            } else if (repetition == 2) {
-                // Run maze with high speed
-            }
             break;
 
         case 4: // Football / Manual control
-            
-            //Serial.println("Manual control");
-            //Serial.println("Desired Direction: " + String(desiredDirection) + ", Desired Velocity: " + String(desiredVelocity));
-            /*
-            directionError = desiredDirection - direction;
-            if (directionError > 180) {
-                directionError = directionError - 360;
-            } else if (directionError < -180) {
-                directionError = directionError + 360;
-            }
-            */
-
-            //Serial.println("Control input:" + String(motor1Error) + ", " + String(motor2Error) + ", " + String((angleSensibility*angleSensibility*angleSensibility)/(desiredDirection*desiredDirection*desiredDirection)) + ", " + String(desiredVelocity));
-            controlState = ControlSystem::update(motor1Error, motor2Error, (angleSensibility*angleSensibility*angleSensibility)/(desiredDirection*desiredDirection*desiredDirection), desiredVelocity);
-            //Serial.println("Control State: " + String(controlState[0]) + ", " + String(controlState[1]));
+            controlState = ControlSystem::update(v1, v2, directionRadius, desiredVelocity);
             break;
 
         default:
@@ -295,14 +210,11 @@ VelocitySensor Vehicle::getVelocitySensor2() {
 
 void Vehicle::processOrder(StaticJsonDocument<200> doc) {
     int command = doc["0"].as<int>();
-    //Serial.println(command);
     switch (command) {
         case 0: // Stop vehicle
-            //Serial.println("Vehicle stopped...");
             mode = 0;
             break;
         case 1: // Set mode
-            //Serial.println("Changing Mode...");
             if (doc["1"] == 3) {
                 mode = 3;
                 repetition = 0;
@@ -317,18 +229,17 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             }
             break;
         case 2: // Set constants
-            //Serial.println("Constants Changed");
             ControlSystem::velocityKp = static_cast<double>(doc["1"]) / 100.0;
             ControlSystem::velocityKi = static_cast<double>(doc["2"]) / 100.0;
             ControlSystem::velocityKd = static_cast<double>(doc["3"]) / 100.0;
             ControlSystem::velocityDerivativeLimit = static_cast<double>(doc["4"]);
             ControlSystem::velocityIntegralLimit = static_cast<double>(doc["5"]);
-            angleSensibility = static_cast<double>(doc["6"]) * 20.0;
-            velocitySensibility = static_cast<double>(doc["7"]) * 2.0;
-            distanceSensibility = static_cast<double>(doc["8"]);
+            rightAnglePoint = static_cast<double>(doc["6"]) / 100.0 * 180.0; // Angle than counts as a right turn
+            angleSensibility = static_cast<double>(doc["7"]) / 100,0 * 5.0;
+            velocitySensibility = static_cast<double>(doc["8"]) / 100,0 * 150.0;
+            distanceSensibility = static_cast<double>(doc["9"]);
             break;
         case 3: {// Joystick
-            //Serial.println("Joystick moved");
             mode = 4;
             int angle = 90 - int(doc["1"]);
             if (angle > 180) {
@@ -339,11 +250,9 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             if (angle == 0) angle = 1;
             desiredDirection = angle;
             desiredVelocity = double(doc["2"])/255.0*velocitySensibility;
-            //Serial.println("Direction: " + String(desiredDirection) + ", Velocity: " + String(desiredVelocity));
             break;
         }
         case 4: {
-            //Serial.println("Set new North");
             // Reset direction
             direction = 0;
             break;
