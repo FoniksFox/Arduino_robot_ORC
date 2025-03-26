@@ -158,9 +158,9 @@ void Vehicle::update() {
             break;
 
         case 4: // Football / Manual control
-            Serial.println("v1: " + String(v1) + "v2: " + String(v2) + "directionRadius: " + String(directionRadius) + "desiredVelocity: " + String(desiredVelocity));
+            //Serial.println("v1: " + String(v1) + "v2: " + String(v2) + "directionRadius: " + String(directionRadius) + "desiredVelocity: " + String(desiredVelocity));
             controlState = ControlSystem::update(v1, v2, directionRadius, desiredVelocity);
-            Serial.println(String(controlState[0]) + " " + String(controlState[1]));
+            //Serial.println(String(controlState[0]) + " " + String(controlState[1]));
             break;
 
         default:
