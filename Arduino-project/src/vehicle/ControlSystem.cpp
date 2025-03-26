@@ -59,11 +59,18 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     double velocity2Error = referenceVelocity2 - velocity2;
 
     // Error constraints (to prevent extreme values)
-    const double MAX_ERROR = 200;
+    const double MAX_ERROR = 500;
     if (velocity1Error > MAX_ERROR) velocity1Error = MAX_ERROR;
     if (velocity1Error < -MAX_ERROR) velocity1Error = -MAX_ERROR;
     if (velocity2Error > MAX_ERROR) velocity2Error = MAX_ERROR;
     if (velocity2Error < -MAX_ERROR) velocity2Error = -MAX_ERROR;
+
+    // Compute alpha for rotation priority
+    double alpha = std::min(1.0, std::max(0.0, std::abs(velocity2Error - velocity1Error) /
+              (std::abs(velocity2Error) + std::abs(velocity1Error) + 1e-6)));
+    //Take the sign of alpha
+    if (velocity2Error - velocity1Error < 0) alpha = -alpha;
+    alpha = 0;  // Disable rotation priority
 
     // Integral terms (clamped)
     velocity1Integral += velocity1Error * deltaT;
@@ -89,18 +96,25 @@ std::vector<int> ControlSystem::update(double velocity1, double velocity2, doubl
     if (velocity2Derivative < -velocityDerivativeLimit) velocity2Derivative = -velocityDerivativeLimit;
 
     // PID Output
+    //Serial.println("Velocity 1 Error: " + String(velocity1Error) + ", Velocity 2 Error: " + String(velocity2Error));
+    //Serial.println("Velocity 1 Integral: " + String(velocity1Integral) + ", Velocity 2 Integral: " + String(velocity2Integral));
+    //Serial.println("Velocity 1 Derivative: " + String(velocity1Derivative) + ", Velocity 2 Derivative: " + String(velocity2Derivative));
     double rawControl1 = velocityKp * velocity1Error + velocityKi * velocity1Integral + velocityKd * velocity1Derivative;
     double rawControl2 = velocityKp * velocity2Error + velocityKi * velocity2Integral + velocityKd * velocity2Derivative;
 
-    // Velocity feedforward
+    // Apply rotation weight (alpha)
+    controlSignal[0] = rawControl1 * (1 - alpha);
+    controlSignal[1] = rawControl2 * (1 + alpha);
+
+    // Velocity feedforward (faster response)
     double feedforward1 = 0.9 * previousControlSignal1;
     double feedforward2 = 0.9 * previousControlSignal2;
     controlSignal[0] += feedforward1;
     controlSignal[1] += feedforward2;
 
     // Rate limiter (prevent sudden jumps)
-    int MAX_CHANGE = deltaT*2000;  // Max change per cycle
-    if (MAX_CHANGE > 70) MAX_CHANGE = 70;
+    int MAX_CHANGE = deltaT*3000;  // Max change per cycle
+    if (MAX_CHANGE > 100) MAX_CHANGE = 100;
     if (controlSignal[0] - previousControlSignal1 > MAX_CHANGE) controlSignal[0] = previousControlSignal1 + MAX_CHANGE;
     if (controlSignal[0] - previousControlSignal1 < -MAX_CHANGE) controlSignal[0] = previousControlSignal1 - MAX_CHANGE;
     if (controlSignal[1] - previousControlSignal2 > MAX_CHANGE) controlSignal[1] = previousControlSignal2 + MAX_CHANGE;

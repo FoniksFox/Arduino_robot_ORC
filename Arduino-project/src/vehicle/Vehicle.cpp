@@ -113,10 +113,12 @@ void Vehicle::update() {
     if (directionError == 0) {
         directionError = 1;
     }
-    double directionRadius = (pow(rightAnglePoint, angleSensibility) * 10.75) / pow(directionError, angleSensibility);
+    //Serial.println("Direction error: " + String(directionError));
+    double directionRadius = (pow(rightAnglePoint, angleSensibility) * 10.75) / pow(abs(directionError), angleSensibility);
     if (directionError < 0) {
         directionRadius = -directionRadius;
     }
+    //Serial.println("Radius: " + String(directionRadius));
 
 
     std::vector<int> controlState = {0, 0};
@@ -156,7 +158,9 @@ void Vehicle::update() {
             break;
 
         case 4: // Football / Manual control
+            Serial.println("v1: " + String(v1) + "v2: " + String(v2) + "directionRadius: " + String(directionRadius) + "desiredVelocity: " + String(desiredVelocity));
             controlState = ControlSystem::update(v1, v2, directionRadius, desiredVelocity);
+            Serial.println(String(controlState[0]) + " " + String(controlState[1]));
             break;
 
         default:
@@ -169,7 +173,7 @@ void Vehicle::update() {
     processQueue();
     processConsoleQueue();
     processBatteryReadings();
-    std::string log = "Velocity: " + std::to_string(velocity) + ", Direction: " + std::to_string(direction) + ", Mode: " + std::to_string(mode);
+    std::string log = "Velocity: " + std::to_string(velocity) + ", Direction: " + std::to_string(directionError) + ", Mode: " + std::to_string(mode);
     sendConsoleMessage(log.c_str());
 }
 
@@ -228,8 +232,8 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             ControlSystem::velocityDerivativeLimit = static_cast<double>(doc["4"]);
             ControlSystem::velocityIntegralLimit = static_cast<double>(doc["5"]);
             rightAnglePoint = static_cast<double>(doc["6"]) / 100.0 * 180.0; // Angle than counts as a right turn
-            angleSensibility = static_cast<double>(doc["7"]) / 100,0 * 5.0;
-            velocitySensibility = static_cast<double>(doc["8"]) / 100,0 * 150.0;
+            angleSensibility = static_cast<double>(doc["7"]) / 100.0 * 5.0;
+            velocitySensibility = static_cast<double>(doc["8"]) / 100.0 * 150.0;
             distanceSensibility = static_cast<double>(doc["9"]);
             break;
         case 3: {// Joystick

@@ -30,11 +30,14 @@ double LineSensor::getLinePosition() {
     
     for (int i = 0; i < 8; i++) {
         int value = analogRead(sensors[i]);
+        //Serial.print(value);
+        //Serial.print(" ");
         int binaryValue = (value > 4000) ? 1 : 0;
         
         sum += binaryValue;
         position += binaryValue * (7 - i - 3.5);
     }
+    //Serial.println();
     
     if (sum == 0) {
         return 0;
