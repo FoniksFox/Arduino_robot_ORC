@@ -20,6 +20,8 @@ std::vector<int> LineSensor::readSensors() {
     for (int i = 0; i < 8; i++) {
         int value = analogRead(sensors[i]);
         readings[i] = (value > 4000) ? 1 : 0;
+        Serial.print(readings[i]);
+
     }
     return readings;
 }
@@ -28,14 +30,16 @@ double LineSensor::getLinePosition() {
     double position = 0;
     int sum = 0;
     
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 7; i++) {
         int value = analogRead(sensors[i]);
         //Serial.print(value);
         //Serial.print(" ");
-        int binaryValue = (value > 4000) ? 1 : 0;
+        int binaryValue = (value == 4095) ? 1 : 0;
+        //Serial.print(binaryValue);
+        //Serial.print(" ");
         
         sum += binaryValue;
-        position += binaryValue * (7 - i - 3.5);
+        position += binaryValue * (7 - i - 3);
     }
     //Serial.println();
     
@@ -43,11 +47,11 @@ double LineSensor::getLinePosition() {
         return 0;
     }
     
-    return (position / sum) / 3.5 * 45;
+    return (position / sum) / 3 * 45;
 }
 
 bool LineSensor::isLineDetected() {
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 7; i++) {
         if (analogRead(sensors[i]) > 4000) {
             return true;
         }
@@ -55,9 +59,9 @@ bool LineSensor::isLineDetected() {
     return false;
 }
 
-bool LineSensor::isIntersection() {
+bool LineSensor::isIntersection() { 
     int activeCount = 0;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 1; i < 7; i++) {
         if (analogRead(sensors[i]) > 4000) {
             activeCount++;
         }

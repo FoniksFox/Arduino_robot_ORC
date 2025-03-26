@@ -37,7 +37,7 @@ class Vehicle : public IVehicle, public Bluetooth {
         double rightAnglePoint;
         double angleSensibility;
         double velocitySensibility;
-        double distanceSensibility;
+        int distanceSensibility;
 
         long long lastUpdateTime;
         double direction;

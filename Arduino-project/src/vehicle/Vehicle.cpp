@@ -2,7 +2,7 @@
 #include <vector>
 #include <ArduinoJson.h>
 
-int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
+int sensors[8] = {26, 25, 33, 32, 35, 39, 34, 36};
 
 Vehicle::Vehicle() : 
     distanceSensor(13, 18), 
@@ -133,15 +133,19 @@ void Vehicle::update() {
             break;
 
         case 2: // Obstacles course
-            if (distanceSensor.getDistance() < distanceSensibility) {
+            Serial.print(distanceSensibility);
+            Serial.print(" ");
+            Serial.print(distanceSensor.getDistance());
+
+            Serial.println();
+            if (int(distanceSensor.getDistance()) < distanceSensibility) {
+                
                 if (line = 0) {
-                    controlState = {255, 100};
-                    delay(1000);
+                    controlState = {255, 0};
                     line = 1;
                     lastLine = -1;
                 } else {
-                    controlState = {100, 255};
-                    delay(1000);
+                    controlState = {0, 255};
                     line = 0;
                     lastLine = 1;
                 }
@@ -234,7 +238,7 @@ void Vehicle::processOrder(StaticJsonDocument<200> doc) {
             rightAnglePoint = static_cast<double>(doc["6"]) / 100.0 * 180.0; // Angle than counts as a right turn
             angleSensibility = static_cast<double>(doc["7"]) / 100.0 * 5.0;
             velocitySensibility = static_cast<double>(doc["8"]) / 100.0 * 150.0;
-            distanceSensibility = static_cast<double>(doc["9"]);
+            distanceSensibility = static_cast<int>(doc["9"]);
             break;
         case 3: {// Joystick
             mode = 4;
