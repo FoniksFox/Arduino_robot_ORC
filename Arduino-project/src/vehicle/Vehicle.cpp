@@ -167,6 +167,35 @@ void Vehicle::update() {
 
         case 3: // Maze solver
             // Implement maze solver
+            while(mode == 3) {
+                // Move into next cell
+                motor1.setSpeed(100);
+                motor2.setSpeed(100);
+                while (!lineSensor.isLineDetected()) { 
+                    delay(1);
+                }
+                delay(500); // Center on the cell
+                motor1.setSpeed(0);
+                motor2.setSpeed(0);
+
+                // Turn to the right
+                motor1.setSpeed(100);
+                motor2.setSpeed(-100);
+                delay(500);
+                motor1.setSpeed(0);
+                motor2.setSpeed(0);
+
+                // Turn left until a path is found
+                while (distanceSensor.getDistance() < distanceSensibility) {
+                    motor1.setSpeed(-100);
+                    motor2.setSpeed(100);
+                    delay(500);
+                    motor1.setSpeed(0);
+                    motor2.setSpeed(0);
+                }
+
+                processQueue();
+            }
             break;
 
         case 4: // Football / Manual control
