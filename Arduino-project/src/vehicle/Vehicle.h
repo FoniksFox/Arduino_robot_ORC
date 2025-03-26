@@ -10,6 +10,9 @@
 #include "../components/VelocitySensor/VelocitySensor.h"
 #include "../bluetooth/Bluetooth.h"
 
+#include "../maze/Scout.h"
+#include "../maze/PathFind.h"
+
 class Vehicle : public IVehicle, public Bluetooth {
     public:
         Vehicle();
@@ -26,6 +29,12 @@ class Vehicle : public IVehicle, public Bluetooth {
         VelocitySensor getVelocitySensor2();
 
     private:
+        void moveForwardDistance(double velocity, unsigned long duration);
+        bool checkWall(int checkDirection);
+        void updatePosition();
+        void navigateToTarget(int targetX, int targetY);
+        std::string generatePathString();
+
         DistanceSensor distanceSensor;
         MotorController motorController;
         Motor motor1;
@@ -33,6 +42,8 @@ class Vehicle : public IVehicle, public Bluetooth {
         LineSensor lineSensor;
         VelocitySensor velocitySensor1;
         VelocitySensor velocitySensor2;
+        PathFinder pathFinder;
+        Scout mazeScout;
 
         double rightAnglePoint;
         double angleSensibility;
@@ -60,6 +71,11 @@ class Vehicle : public IVehicle, public Bluetooth {
         short mazeX;
         short mazeY;
         short mazeDirection;
+        std::string nextMove;
+        std::pair<int, int> currentPos;
+        int currentDirection;
+        std::vector<std::vector<std::vector<int>>> mazeData;
+        const int MAZE_SIZE = 7;
 
 };
 
