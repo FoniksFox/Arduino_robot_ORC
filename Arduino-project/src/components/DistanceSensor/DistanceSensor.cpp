@@ -23,6 +23,7 @@ long DistanceSensor::getDistance() {
 
     long duration = pulseIn(echoPin, HIGH);
     long distance = duration * 0.034 / 2;
+    lastDistance = distance;
     
     lastTime = millis();
     return distance;

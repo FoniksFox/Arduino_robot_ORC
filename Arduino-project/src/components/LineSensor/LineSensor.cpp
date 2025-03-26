@@ -19,8 +19,9 @@ std::vector<int> LineSensor::readSensors() {
     std::vector<int> readings(8, 0);
     for (int i = 0; i < 8; i++) {
         int value = analogRead(sensors[i]);
-        readings[i] = (value > 4000) ? 1 : 0;
-        Serial.print(readings[i]);
+        //readings[i] = (value > 4000) ? 1 : 0;
+        readings[i] = value;
+        //Serial.print(readings[i]);
 
     }
     return readings;
@@ -30,7 +31,7 @@ double LineSensor::getLinePosition() {
     double position = 0;
     int sum = 0;
     
-    for (int i = 0; i < 7; i++) {
+    for (int i = 1; i < 7; i++) {
         int value = analogRead(sensors[i]);
         //Serial.print(value);
         //Serial.print(" ");
@@ -51,7 +52,7 @@ double LineSensor::getLinePosition() {
 }
 
 bool LineSensor::isLineDetected() {
-    for (int i = 0; i < 7; i++) {
+    for (int i = 1; i < 7; i++) {
         if (analogRead(sensors[i]) > 4000) {
             return true;
         }

@@ -133,25 +133,33 @@ void Vehicle::update() {
             break;
 
         case 2: // Obstacles course
-            Serial.print(distanceSensibility);
-            Serial.print(" ");
-            Serial.print(distanceSensor.getDistance());
+            //Serial.print(distanceSensibility);
+            //Serial.print(" ");
+            //Serial.print(distanceSensor.getDistance());
 
-            Serial.println();
-            if (int(distanceSensor.getDistance()) < distanceSensibility) {
-                
-                if (line = 0) {
-                    controlState = {255, 0};
+            //Serial.println();
+            if (distanceSensor.getDistance() < distanceSensibility) {
+                //Serial.println("Obstacle detected");
+                if (line == 0) {
+                    controlState = {100, 0};
                     line = 1;
                     lastLine = -1;
                 } else {
-                    controlState = {0, 255};
+                    controlState = {0, 100};
                     line = 0;
                     lastLine = 1;
                 }
                 motor1.setSpeed(controlState[0]);
                 motor2.setSpeed(controlState[1]);
-                delay(1000);
+                delay(500);
+                controlState = {150, 150};
+                motor1.setSpeed(controlState[0]);
+                motor2.setSpeed(controlState[1]);
+                while(!lineSensor.isLineDetected()) {
+                    delay(1);
+                }
+                controlState = {0, 0};
+
             } else {
                 controlState = ControlSystem::update(v1, v2, directionRadius, velocitySensibility);
             }
@@ -177,7 +185,13 @@ void Vehicle::update() {
     processQueue();
     processConsoleQueue();
     processBatteryReadings();
-    std::string log = "Velocity: " + std::to_string(velocity) + ", Direction: " + std::to_string(directionError) + ", Mode: " + std::to_string(mode);
+    //std::string log = "Velocity: " + std::to_string(velocity) + ", Direction: " + std::to_string(directionError) + ", Mode: " + std::to_string(mode);
+    std::vector<int> readings = lineSensor.readSensors();
+    std::string log = "";
+    for (int i = 0; i < 8; i++) {
+        log += std::to_string(readings[i]);
+        log += " ";
+    }
     sendConsoleMessage(log.c_str());
 }
 
