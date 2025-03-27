@@ -138,7 +138,7 @@ void Vehicle::update() {
             //Serial.print(distanceSensor.getDistance());
 
             //Serial.println();
-            if (distanceSensor.getDistance() < distanceSensibility) {
+            if (distanceSensor.getDistance() < distanceSensibility && abs(directionError) < 10) {
                 //Serial.println("Obstacle detected");
                 if (line == 0) {
                     controlState = {100, 0};
@@ -151,7 +151,10 @@ void Vehicle::update() {
                 }
                 motor1.setSpeed(controlState[0]);
                 motor2.setSpeed(controlState[1]);
-                delay(500);
+                while (lineSensor.getLinePosition() > 10) {
+                    delay(1);
+                }
+                delay(600);
                 controlState = {150, 150};
                 motor1.setSpeed(controlState[0]);
                 motor2.setSpeed(controlState[1]);
@@ -169,29 +172,42 @@ void Vehicle::update() {
             // Implement maze solver
             while(mode == 3) {
                 // Move into next cell
-                motor1.setSpeed(100);
-                motor2.setSpeed(100);
+                motor1.setSpeed(150);
+                motor2.setSpeed(150);
                 while (!lineSensor.isLineDetected()) { 
                     delay(1);
                 }
-                delay(500); // Center on the cell
+                
+                if (lineSensor.getLinePosition() > 0) { // Correct the position
+                    motor2.setSpeed(0);
+                } else {
+                    motor1.setSpeed(0);
+                }
+                
+                delay(angleSensibility*50);
+                motor1.setSpeed(150);
+                motor2.setSpeed(150);
+                delay(velocitySensibility*20); // Center on the cell
                 motor1.setSpeed(0);
                 motor2.setSpeed(0);
+                delay(500);
 
                 // Turn to the right
-                motor1.setSpeed(100);
-                motor2.setSpeed(-100);
-                delay(500);
+                motor1.setSpeed(150);
+                motor2.setSpeed(-150);
+                delay(rightAnglePoint*20);
                 motor1.setSpeed(0);
                 motor2.setSpeed(0);
+                delay(rightAnglePoint*20);
 
                 // Turn left until a path is found
                 while (distanceSensor.getDistance() < distanceSensibility) {
-                    motor1.setSpeed(-100);
-                    motor2.setSpeed(100);
-                    delay(500);
+                    motor1.setSpeed(-150);
+                    motor2.setSpeed(150);
+                    delay(rightAnglePoint*20+ 50);
                     motor1.setSpeed(0);
                     motor2.setSpeed(0);
+                    delay(rightAnglePoint*20);
                 }
 
                 processQueue();
