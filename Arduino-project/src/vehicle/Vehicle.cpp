@@ -2,16 +2,16 @@
 #include <vector>
 #include <ArduinoJson.h>
 
-int sensors[8] = {26, 25, 33, 32, 35, 39, 34, 36};
+int sensors[8] = {26, 25, 33, 32, 35, 34, 39, 36};
 
 Vehicle::Vehicle() : 
-    distanceSensor(13, 18), 
-    motorController(19, 14, 12, 21, 23, 22), 
+    distanceSensor(10, 11), 
+    motorController(17, 6, 16, 4, 8, 7), 
     motor1(motorController, 1), 
     motor2(motorController, 2), 
     lineSensor(27, sensors), 
-    velocitySensor1(16), 
-    velocitySensor2(17)
+    velocitySensor1(12), 
+    velocitySensor2(14)
 {}
 
 void Vehicle::init() {
